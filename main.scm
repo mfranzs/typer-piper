@@ -57,7 +57,9 @@
   ((%transform-graph 'has?) function))
 
 (define (get-predicate-transforms predicate)
-  ((%transform-graph 'get) predicate))
+  (if (predicate? predicate)
+    ((%transform-graph 'get) predicate)
+    '()))
 
 (define (get-predicate-supers predicate)
   ((%supertype-graph 'get) predicate))
@@ -69,7 +71,7 @@
       output-predicate) transformation))
 
 (define (get-transformations input-predicate output-predicate)
-  (get-transformations-internal input-predicate output-predicate))
+  (get-transformations-internal input-predicate output-predicate '()))
 
 (define (get-transformations-internal input-predicate output-predicate path-so-far)
   (let*
@@ -83,7 +85,7 @@
             (if (eq? out-type output-predicate)
                 (list (list transformation))
                 (map (lambda (path) (cons transformation path))
-                     (get-transformations out-type output-predicate (cons out-type path-so-far))))))
+                     (get-transformations-internal out-type output-predicate (cons out-type path-so-far))))))
       transform-outs transforms))))
 
     valid-paths-from-outs
