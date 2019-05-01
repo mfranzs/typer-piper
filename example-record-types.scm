@@ -31,17 +31,12 @@
 (define person:last-name? printable-string?)
 (define person:age? number?)
 
-(write-line "!")
-(write-line person?)
-
 (register-type-transform! person? person:first-name?
 			       person:first-name)
 (register-type-transform! person? person:last-name?
 			       person:last-name)
 (register-type-transform! person? person:age?
 			       person:age)
-
-(write-line "A")
 
 (define-record-type FullName
   (make-full-name first-name last-name)
@@ -50,10 +45,6 @@
   (last-name full-name:last-name))
 
 (define gs (make-person "Gerald" "Sussman" 18))
-(write-line gs)
-(write-line (person:first-name gs))
 
-(write-line "??")
-((create-compound-transformation (car(get-transformations person?
-							  string?))) gs)
+(debug-get-transformations-values person? printable-string? gs)
 

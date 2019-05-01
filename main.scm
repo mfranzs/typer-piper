@@ -1,17 +1,3 @@
-; (load "load.scm")
-; (load
-;       '("common/overrides"
-;         "common/utils"
-;         "common/collections"
-;         "common/memoizers"
-;         "common/predicates"
-;         "common/predicate-metadata"
-;         "common/applicability"
-;         "common/generic-procedures"
-;         "common/predicate-counter"
-;         "common/simple-tests"
-;         "common/trie"))
-
 ;; Association list of input-predicate -> '(
 ;;   (predicate-transformation . transformation)
 ;;   ...
@@ -70,31 +56,89 @@
       (lambda (x) output-predicate)
       output-predicate) transformation))
 
+(define transformation-predicate-transform car)
+(define transformation-data-transform cdr)
+
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate '()))
 
 (define (get-transformations-internal input-predicate output-predicate path-so-far)
+  (if (eq? input-predicate output-predicate) (list (list))
   (let*
     ((transforms (get-predicate-transforms input-predicate))
-     (transform-outs (map
-       (lambda (pair) ((car pair) input-predicate))
-       transforms))
-     (valid-paths-from-outs (apply append (map
-        (lambda (out-type transformation)
-          (if (find (lambda (pred) (eq? out-type pred)) path-so-far) '()
-            (if (eq? out-type output-predicate)
-                (list (list transformation))
-                (map (lambda (path) (cons transformation path))
-                     (get-transformations-internal out-type output-predicate (cons out-type path-so-far))))))
-      transform-outs transforms))))
+     (transform-outs (map (lambda (pair) ((car pair) input-predicate))
+                      transforms)))
+     
+    (apply append (map
+      (lambda (out-type transformation)
+        (if (find (lambda (pred) (eq? out-type pred)) path-so-far) '()
+          (map (lambda (path) (cons transformation path))
+               (get-transformations-internal out-type output-predicate (cons out-type path-so-far)))))
+      transform-outs transforms)))))
 
-    valid-paths-from-outs
-  ))
+(define (get-transformations input-predicate output-predicate)
+  (get-transformations-internal input-predicate output-predicate '()))
+
+(define identity (lambda args args))
 
 (define (create-compound-transformation path)
-  (fold-left (lambda (compound-transformation transformation)
-     (lambda (in) ((cdr transformation) (compound-transformation in))))
-     (lambda (in) in) path))
+  (fold-left 
+    (lambda (compound-transformation transformation)
+      (lambda (in) 
+        ((cdr transformation) (compound-transformation in))))
+    identity
+    path))
 
-; ((create-compound-transformation (car (get-transformations list? string? '()))) '(1 2 3))
+;; ==============
+;; Visualizing Transformations
+;; ==============
 
+(define (debug-get-transformations input-predicate output-predicate)
+  (let ((paths (get-transformations-internal input-predicate output-predicate '())))
+      (write-line paths)
+      (map 
+        (lambda (path) (path-to-intermediate-predicates path input-predicate)) paths)))
+
+(define (debug-get-transformations-values input-predicate
+					  output-predicate input-value)
+  (let ((paths (get-transformations-internal input-predicate output-predicate '())))
+      (write-line paths)
+      (map 
+        (lambda (path) (path-to-intermediate-values path input-value)) paths)))
+
+(define (path-to-intermediate-predicates path input-predicate) 
+  (fold-left 
+    (lambda (intermediate-predicates transformation)
+      (cons 
+        ((transformation-predicate-transform transformation) (car intermediate-predicates))
+        intermediate-predicates))
+    (list input-predicate)
+    path))
+
+(define (path-to-intermediate-values path input-value) 
+  (fold-left 
+   (lambda (intermediate-values transformation)
+     (write-line  (car intermediate-values))
+      (cons 
+        ((transformation-data-transform transformation) (car intermediate-values))
+        intermediate-values))
+    (list input-value)
+    path))
+
+;; ==============
+;; Tests
+;; ==============
+
+(register-predicate! list?)
+(register-predicate! number?)
+(register-predicate! string?)
+
+(register-type-transform! list? number? length)
+(register-type-transform! number? string? number->string)
+(register-type-transform! string? number? string->number)
+
+((create-compound-transformation (car (get-transformations list?
+							   string?)))
+ '(1 2 3))
+
+(debug-get-transformations-values list? string? '(1 2 3))
