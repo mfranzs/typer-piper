@@ -1,0 +1,31 @@
+;; ===================
+;; Helper for easily memoizing functions
+;; ===================
+
+(define (memoize function)
+
+  ;; Hash table mapping arguments -> result
+  (define stored-evaluations (make-strong-eq-hash-table))
+  
+  (define memoize-inner
+    (lambda args
+      (hash-table/lookup
+       stored-evaluations
+       (lambda (found-value) found-value)
+       (lambda ()
+	 ;; Stored value not found
+	 (let ((result (apply function args)))
+	   (hash-table-set! stored-evaluations args result)
+	   result)))))
+			 
+  memoize-inner)
+
+;; Tests:
+
+(define (test x)
+  (write-line x)
+  x)
+
+(define test-memoized (memoize test))
+
+(test-memoized 1)
