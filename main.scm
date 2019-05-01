@@ -65,9 +65,14 @@
 (define (get-transformations-internal input-predicate output-predicate path-so-far)
   (if (eq? input-predicate output-predicate) (list (list))
   (let*
-    ((transforms (get-predicate-transforms input-predicate))
-     (transform-outs (map (lambda (pair) ((car pair) input-predicate))
-                      transforms)))
+    ((transforms (append
+       (get-predicate-transforms input-predicate)
+       (apply append (map get-predicate-transforms
+         (get-predicate-supers input-predicate)))))
+
+    (transform-outs (map
+      (lambda (pair) ((car pair) input-predicate))
+      transforms)))
      
     (apply append (map
       (lambda (out-type transformation)
@@ -133,12 +138,15 @@
 (register-predicate! number?)
 (register-predicate! string?)
 
+(define (is-three? num) (eq? num 3))
+
+(register-predicate! is-three?)
+(register-super! is-three? number?)
+
 (register-type-transform! list? number? length)
 (register-type-transform! number? string? number->string)
 (register-type-transform! string? number? string->number)
 
-((create-compound-transformation (car (get-transformations list?
-							   string?)))
- '(1 2 3))
-
 (debug-get-transformations-values list? string? '(1 2 3))
+
+(debug-get-transformations-values is-three? string? 3)
