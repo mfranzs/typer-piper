@@ -1,5 +1,3 @@
-(load "load.scm")
-
 ;; Association list of input-predicate -> '(
 ;;   (predicate-transformation . transformation)
 ;;   ...
@@ -57,27 +55,31 @@
       output-predicate) transformation))
 
 (define (get-transformations input-predicate output-predicate path-so-far)
+  (if (eq? input-predicate output-predicate) (list (list))
   (let*
     ((transforms (get-predicate-transforms input-predicate))
-     (transform-outs (map
-       (lambda (pair) ((car pair) input-predicate))
-       transforms))
-     (valid-paths-from-outs (apply append (map
-        (lambda (out-type transformation)
-          (if (find (lambda (pred) (eq? out-type pred)) path-so-far) '()
-            (if (eq? out-type output-predicate)
-                (list (list transformation))
-                (map (lambda (path) (cons transformation path))
-                     (get-transformations out-type output-predicate (cons out-type path-so-far))))))
-      transform-outs transforms))))
-
-    valid-paths-from-outs
-  ))
+     (transform-outs (map (lambda (pair) ((car pair) input-predicate))
+                      transforms)))
+     
+    (apply append (map
+      (lambda (out-type transformation)
+        (if (find (lambda (pred) (eq? out-type pred)) path-so-far) '()
+          (map (lambda (path) (cons transformation path))
+               (get-transformations out-type output-predicate (cons out-type path-so-far)))))
+      transform-outs transforms)))))
 
 (define (create-compound-transformation path)
   (fold-left (lambda (compound-transformation transformation)
      (lambda (in) ((cdr transformation) (compound-transformation in))))
      (lambda (in) in) path))
 
-((create-compound-transformation (car (get-transformations list? string? '()))) '(1 2 3))
+(register-predicate! list?)
+(register-predicate! number?)
+(register-predicate! string?)
+
+(register-type-transform list? number? length)
+(register-type-transform number? string? number->string)
+(register-type-transform string? number? string->number)
+
+((create-compound-transformation (car (get-transformations list? list? '()))) '(1 2 3))
 
