@@ -48,13 +48,13 @@
 (define (get-predicate-supers predicate)
   ((%supertype-graph 'get) predicate))
 
-(define (register-type-transform input-predicate output-predicate transformation)
+(define (register-type-transform! input-predicate output-predicate transformation)
   (add-to-transform-graph! input-predicate
     (if (predicate? output-predicate)
       (lambda (x) output-predicate)
       output-predicate) transformation))
 
-(define (get-transformations input-predicate output-predicate path-so-far)
+(define (get-transformations-internal input-predicate output-predicate path-so-far)
   (if (eq? input-predicate output-predicate) (list (list))
   (let*
     ((transforms (get-predicate-transforms input-predicate))
@@ -65,8 +65,11 @@
       (lambda (out-type transformation)
         (if (find (lambda (pred) (eq? out-type pred)) path-so-far) '()
           (map (lambda (path) (cons transformation path))
-               (get-transformations out-type output-predicate (cons out-type path-so-far)))))
+               (get-transformations-internal out-type output-predicate (cons out-type path-so-far)))))
       transform-outs transforms)))))
+
+(define (get-transformations input-predicate output-predicate)
+  (get-transformations-internal input-predicate output-predicate '()))
 
 (define (create-compound-transformation path)
   (fold-left (lambda (compound-transformation transformation)
@@ -77,9 +80,8 @@
 (register-predicate! number?)
 (register-predicate! string?)
 
-(register-type-transform list? number? length)
-(register-type-transform number? string? number->string)
-(register-type-transform string? number? string->number)
+(register-type-transform! list? number? length)
+(register-type-transform! number? string? number->string)
+(register-type-transform! string? number? string->number)
 
-((create-compound-transformation (car (get-transformations list? list? '()))) '(1 2 3))
-
+((create-compound-transformation (car (get-transformations list? string?))) '(1 2 3))
