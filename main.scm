@@ -62,21 +62,43 @@
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate '()))
 
+(define (two-crossproduct a b)
+  (apply append (map (lambda (a-el) (map (lambda (b-el) (cons a-el b-el)) b)) a)))
+
+(define (crossproduct lists)
+  (fold-right two-crossproduct (list (list)) lists))
+
+(define identity-transform (cons identity identity))
+
 (define (get-transformations-internal input-predicate output-predicate path-so-far)
-  (if (eq? input-predicate output-predicate) (list (list))
+  (if (equal? input-predicate output-predicate) (list (list))
   (let*
-    ((transforms (append
+    ((transforms (if (list? input-predicate)
+      (crossproduct (map 
+        (lambda (pred) (cons
+          identity-transform
+          (get-predicate-transforms pred)))
+        input-predicate))
+      
+      (append
        (get-predicate-transforms input-predicate)
        (apply append (map get-predicate-transforms
-         (get-predicate-supers input-predicate)))))
+         (get-predicate-supers input-predicate))))))
 
-    (transform-outs (map
+    (transform-outs (if (list? input-predicate)
+      (map (lambda (compound)
+        (map
+          (lambda (pair predicate) ((car pair) predicate))
+          compound input-predicate))
+        transforms)
+
+      (map
       (lambda (pair) ((car pair) input-predicate))
-      transforms)))
+      transforms))))
      
     (apply append (map
       (lambda (out-type transformation)
-        (if (find (lambda (pred) (eq? out-type pred)) path-so-far) '()
+        (if (find (lambda (pred) (equal? out-type pred)) path-so-far) '()
           (map (lambda (path) (cons transformation path))
                (get-transformations-internal out-type output-predicate (cons out-type path-so-far)))))
       transform-outs transforms)))))
@@ -86,11 +108,16 @@
 
 (define identity (lambda (x) x))
 
+(define (get-transformation-f transformation)
+  (if (list? transformation)
+    (lambda (in) (map (lambda (value transform) ((get-transformation-f transform) value)) in transformation))
+    (cdr transformation)))
+
 (define (create-compound-transformation path)
   (fold-left 
     (lambda (compound-transformation transformation)
       (lambda (in) 
-        ((cdr transformation) (compound-transformation in))))
+        ((get-transformation-f transformation) (compound-transformation in))))
     identity
     path))
 
@@ -160,3 +187,6 @@
       #f)))
 
 (debug-get-transformations-values is-three? string? 3)
+
+(transform (list number? string?) (list string? string?) (list 1 "2"))
+
