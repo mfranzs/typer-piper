@@ -84,7 +84,7 @@
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate '()))
 
-(define identity (lambda args args))
+(define identity (lambda (x) x))
 
 (define (create-compound-transformation path)
   (fold-left 
@@ -100,14 +100,12 @@
 
 (define (debug-get-transformations input-predicate output-predicate)
   (let ((paths (get-transformations-internal input-predicate output-predicate '())))
-      (write-line paths)
       (map 
         (lambda (path) (path-to-intermediate-predicates path input-predicate)) paths)))
 
 (define (debug-get-transformations-values input-predicate
 					  output-predicate input-value)
   (let ((paths (get-transformations-internal input-predicate output-predicate '())))
-      (write-line paths)
       (map 
         (lambda (path) (path-to-intermediate-values path input-value)) paths)))
 
@@ -115,7 +113,7 @@
   (fold-left 
     (lambda (intermediate-predicates transformation)
       (cons 
-        ((transformation-predicate-transform transformation) (car intermediate-predicates))
+        (get-name ((transformation-predicate-transform transformation) (car intermediate-predicates)))
         intermediate-predicates))
     (list input-predicate)
     path))
@@ -123,12 +121,15 @@
 (define (path-to-intermediate-values path input-value) 
   (fold-left 
    (lambda (intermediate-values transformation)
-     (write-line  (car intermediate-values))
       (cons 
         ((transformation-data-transform transformation) (car intermediate-values))
         intermediate-values))
     (list input-value)
     path))
+
+(define (transform input-predicate output-predicate input-value)
+        ((create-compound-transformation (car (get-transformations input-predicate output-predicate))) 
+          input-value))
 
 ;; ==============
 ;; Tests

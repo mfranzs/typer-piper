@@ -40,8 +40,10 @@
 ;; example: duplicating list length
 ;; ===================
 
-(define (duplicate-items-in-list list)
-  (cons list list))
+(define (duplicate-items-in-list lst)
+  (apply append (list lst lst)))
+
+(duplicate-items-in-list (list 1 2))
 
 (register-type-transform!
            length-list?
@@ -49,7 +51,16 @@
 	     (generate-list-predicate (* 2 (get-list-predicate-length input_type))))
 	   duplicate-items-in-list)
 
-(debug-get-transformations-values
+(write-line "Duplicating list length")
+
+(pp (debug-get-transformations-values
  (generate-list-predicate 2)
  (generate-list-predicate 4)
- (list 2 3))
+ (list 2 3)))
+
+(write-line "Transform")
+
+(write-line (transform
+ (generate-list-predicate 2)
+ (generate-list-predicate 4)
+ (list 2 3)))
