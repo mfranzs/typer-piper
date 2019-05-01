@@ -43,7 +43,9 @@
   ((%transform-graph 'has?) function))
 
 (define (get-predicate-transforms predicate)
-  ((%transform-graph 'get) predicate))
+  (if (predicate? predicate)
+    ((%transform-graph 'get) predicate)
+    '()))
 
 (define (get-predicate-supers predicate)
   ((%supertype-graph 'get) predicate))
@@ -53,6 +55,12 @@
     (if (predicate? output-predicate)
       (lambda (x) output-predicate)
       output-predicate) transformation))
+
+(define transformation-predicate-transform car)
+(define transformation-data-transform cdr)
+
+(define (get-transformations input-predicate output-predicate)
+  (get-transformations-internal input-predicate output-predicate '()))
 
 (define (get-transformations-internal input-predicate output-predicate path-so-far)
   (if (eq? input-predicate output-predicate) (list (list))
@@ -76,10 +84,56 @@
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate '()))
 
+(define identity (lambda (x) x))
+
 (define (create-compound-transformation path)
-  (fold-left (lambda (compound-transformation transformation)
-     (lambda (in) ((cdr transformation) (compound-transformation in))))
-     (lambda (in) in) path))
+  (fold-left 
+    (lambda (compound-transformation transformation)
+      (lambda (in) 
+        ((cdr transformation) (compound-transformation in))))
+    identity
+    path))
+
+;; ==============
+;; Visualizing Transformations
+;; ==============
+
+(define (debug-get-transformations input-predicate output-predicate)
+  (let ((paths (get-transformations-internal input-predicate output-predicate '())))
+      (map 
+        (lambda (path) (path-to-intermediate-predicates path input-predicate)) paths)))
+
+(define (debug-get-transformations-values input-predicate
+					  output-predicate input-value)
+  (let ((paths (get-transformations-internal input-predicate output-predicate '())))
+      (map 
+        (lambda (path) (path-to-intermediate-values path input-value)) paths)))
+
+(define (path-to-intermediate-predicates path input-predicate) 
+  (fold-left 
+    (lambda (intermediate-predicates transformation)
+      (cons 
+        (get-name ((transformation-predicate-transform transformation) (car intermediate-predicates)))
+        intermediate-predicates))
+    (list input-predicate)
+    path))
+
+(define (path-to-intermediate-values path input-value) 
+  (fold-left 
+   (lambda (intermediate-values transformation)
+      (cons 
+        ((transformation-data-transform transformation) (car intermediate-values))
+        intermediate-values))
+    (list input-value)
+    path))
+
+(define (transform input-predicate output-predicate input-value)
+        ((create-compound-transformation (car (get-transformations input-predicate output-predicate))) 
+          input-value))
+
+;; ==============
+;; Tests
+;; ==============
 
 (register-predicate! list?)
 (register-predicate! number?)
@@ -94,9 +148,7 @@
 (register-type-transform! number? string? number->string)
 (register-type-transform! string? number? string->number)
 
-((create-compound-transformation (car (get-transformations list? string?))) '(1 2 3))
-
-((create-compound-transformation (car (get-transformations is-three? string?))) 3)
+(debug-get-transformations-values list? string? '(1 2 3))
 
 (define (get-name f)
   (let ((matches (filter
@@ -106,3 +158,5 @@
     (if (>= (length matches) 1)
       (car (car matches))
       #f)))
+
+(debug-get-transformations-values is-three? string? 3)

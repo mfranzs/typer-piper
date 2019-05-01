@@ -2,9 +2,12 @@
 ;; Printable strings
 ;; ===================
 
+(load "load.scm")
+(load "main.scm")
+
 (define printable-string? string?)
 (register-predicate! printable-string?)
-(register-supertype! string? printable-string?)
+(register-super! string? printable-string?)
 
 ;; ===================
 ;; Predicates for record types
@@ -28,28 +31,20 @@
 (define person:last-name? printable-string?)
 (define person:age? number?)
 
-(register-type-transformation! person? person:first-name?
+(register-type-transform! person? person:first-name?
 			       person:first-name)
-(register-type-transformation! person? person:last-name?
+(register-type-transform! person? person:last-name?
 			       person:last-name)
-(register-type-transformation! person? person:age?
+(register-type-transform! person? person:age?
 			       person:age)
 
 (define-record-type FullName
   (make-full-name first-name last-name)
   full-name?
-  (first-name person:first-name)
-  (last-name person:last-name))
+  (first-name full-name:first-name)
+  (last-name full-name:last-name))
 
 (define gs (make-person "Gerald" "Sussman" 18))
-(person:first-name gs)
 
-(get-transformations person? printable-string?)
-(
+(debug-get-transformations-values person? printable-string? gs)
 
-(apply append
-	     (list
-	      (list 'a 'b 'c)
-	      (list 'z)
-	      (list 'd 'e 'f)
-	      (list)))

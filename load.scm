@@ -7,11 +7,7 @@
         "common/utils"
         "common/collections"
         "common/memoizers"
-        "common/predicates"
-        "common/predicate-metadata"
         "common/applicability"
-        "common/generic-procedures"
-        "common/predicate-counter"
         "common/simple-tests"
         "common/trie")
       env)))
