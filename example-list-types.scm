@@ -30,11 +30,11 @@
 ;; hash table for storing lengths associated with length-list? predicates
 (define list-predicate-lengths (make-strong-eq-hash-table)) 
 
-(define (register-list-predicate-length! list-predicate-with-length length)
-  (hash-table-set! list-predicate-lengths list-predicate-with-length length))
+(define (register-list-predicate-length! list-predicate-with-length? length)
+  (hash-table-set! list-predicate-lengths list-predicate-with-length? length))
 
-(define (get-list-predicate-length list-predicate-with-length)
-  (hash-table-ref list-predicate-lengths list-predicate-width-length))
+(define (get-list-predicate-length list-predicate-with-length?)
+  (hash-table-ref list-predicate-lengths list-predicate-with-length?))
 
 ;; ===================
 ;; example: duplicating list length
@@ -49,6 +49,7 @@
 	     (generate-list-predicate (* 2 (get-list-predicate-length input_type))))
 	   duplicate-items-in-list)
 
-(get-transformations
+(debug-get-transformations-values
  (generate-list-predicate 2)
- (generate-list-predicate 4))
+ (generate-list-predicate 4)
+ (list 2 3))
