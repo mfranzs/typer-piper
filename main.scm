@@ -98,3 +98,11 @@
 
 ((create-compound-transformation (car (get-transformations is-three? string?))) 3)
 
+(define (get-name f)
+  (let ((matches (filter
+      (lambda (el) (and (> (length el) 1) (eq? (car (cdr el)) f)))
+      (environment-bindings user-initial-environment))))
+
+    (if (>= (length matches) 1)
+      (car (car matches))
+      #f)))
