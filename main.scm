@@ -1,4 +1,16 @@
-(load "load.scm")
+; (load "load.scm")
+; (load
+;       '("common/overrides"
+;         "common/utils"
+;         "common/collections"
+;         "common/memoizers"
+;         "common/predicates"
+;         "common/predicate-metadata"
+;         "common/applicability"
+;         "common/generic-procedures"
+;         "common/predicate-counter"
+;         "common/simple-tests"
+;         "common/trie"))
 
 ;; Association list of input-predicate -> '(
 ;;   (predicate-transformation . transformation)
@@ -50,13 +62,16 @@
 (define (get-predicate-supers predicate)
   ((%supertype-graph 'get) predicate))
 
-(define (register-type-transform input-predicate output-predicate transformation)
+(define (register-type-transform! input-predicate output-predicate transformation)
   (add-to-transform-graph! input-predicate
     (if (predicate? output-predicate)
       (lambda (x) output-predicate)
       output-predicate) transformation))
 
-(define (get-transformations input-predicate output-predicate path-so-far)
+(define (get-transformations input-predicate output-predicate)
+  (get-transformations-internal input-predicate output-predicate))
+
+(define (get-transformations-internal input-predicate output-predicate path-so-far)
   (let*
     ((transforms (get-predicate-transforms input-predicate))
      (transform-outs (map
@@ -79,5 +94,5 @@
      (lambda (in) ((cdr transformation) (compound-transformation in))))
      (lambda (in) in) path))
 
-((create-compound-transformation (car (get-transformations list? string? '()))) '(1 2 3))
+; ((create-compound-transformation (car (get-transformations list? string? '()))) '(1 2 3))
 
