@@ -58,6 +58,11 @@
  (generate-list-predicate 4)
  (list 2 3)))
 
+(pp (debug-get-transformations
+ (generate-list-predicate 2)
+ (generate-list-predicate 4)
+))
+
 (write-line "Transform")
 
 (write-line (transform

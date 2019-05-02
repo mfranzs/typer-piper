@@ -5,7 +5,7 @@
 (load "load.scm")
 (load "main.scm")
 
-(define printable-string? string?)
+(define (printable-string? x) (string? x))
 (register-predicate! printable-string?)
 (register-super! string? printable-string?)
 
@@ -27,9 +27,13 @@
   (last-name person:last-name)
   (age person:age))
 
-(define person:first-name? printable-string?)
-(define person:last-name? printable-string?)
-(define person:age? number?)
+(define (person:first-name? x) (printable-string? x))
+(define (person:last-name? x) (printable-string? x))
+(define (person:age? x) (number? x))
+
+(register-predicate! person:first-name?)
+(register-predicate! person:last-name?)
+(register-predicate! person:age?)
 
 (register-type-transform! person? person:first-name?
 			       person:first-name)

@@ -115,7 +115,7 @@
       (cons 
         (get-name ((transformation-predicate-transform transformation) (car intermediate-predicates)))
         intermediate-predicates))
-    (list input-predicate)
+    (list (get-name input-predicate))
     path))
 
 (define (path-to-intermediate-values path input-value) 
@@ -130,6 +130,14 @@
 (define (transform input-predicate output-predicate input-value)
         ((create-compound-transformation (car (get-transformations input-predicate output-predicate))) 
           input-value))
+
+(define (get-name f)
+  (let ((matches (filter
+      (lambda (el) (and (> (length el) 1) (eq? (car (cdr el)) f)))
+      (environment-bindings user-initial-environment))))
+    (if (>= (length matches) 1)
+      (car (car matches))
+      #f)))
 
 ;; ==============
 ;; Tests
@@ -149,14 +157,8 @@
 (register-type-transform! string? number? string->number)
 
 (debug-get-transformations-values list? string? '(1 2 3))
+(pp (debug-get-transformations list? string?))
 
-(define (get-name f)
-  (let ((matches (filter
-      (lambda (el) (and (> (length el) 1) (eq? (car (cdr el)) f)))
-      (environment-bindings user-initial-environment))))
-
-    (if (>= (length matches) 1)
-      (car (car matches))
-      #f)))
-
-(debug-get-transformations-values is-three? string? 3)
+(pp (debug-get-transformations-values is-three? string? 3))
+(write-line "???")
+(pp (debug-get-transformations is-three? string?))
