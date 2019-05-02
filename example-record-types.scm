@@ -36,6 +36,7 @@
 (register-predicate! person:last-name?)
 (register-super! person:last-name? printable-string?)
 (register-predicate! person:age?)
+(register-super! person:age? integer?)
 
 (register-type-transform! person? person:first-name?
 			       person:first-name)

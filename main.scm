@@ -1,35 +1,23 @@
+;; ==============
+;; Type Transform Graph
+;; ==============
+
 ;; Association list of input-predicate -> '(
 ;;   (predicate-transformation . transformation)
 ;;   ...
 ;; )
 (define %transform-graph)
 
-;; Association list of input-predicate -> '(
-;;   predicate-supertype?
-;; )
-(define %supertype-graph)
-
 (define (reset-transform-graph!)
   (set! %transform-graph (make-alist-store eq?)))
 
-(define (reset-supertype-graph!)
-  (set! %supertype-graph (make-alist-store eq?)))
-
 (reset-transform-graph!)
-(reset-supertype-graph!)
-
-(define (register-super! predicate-sub predicate-super)
-  (register-predicate! predicate-sub)
-  (register-predicate! predicate-super)
-
-  ((%supertype-graph 'put!) predicate-sub
-    (cons predicate-super (get-predicate-supers predicate-sub))))
 
 (define (add-to-transform-graph! input-predicate predicate-transformation transformation)
   (register-predicate! input-predicate)
   (let*
     ((existing-transforms (get-predicate-transforms input-predicate))
-     (new-transform (cons predicate-transformation transformation))
+     (new-transform (make-transform predicate-transformation transformation))
      (new-transforms (cons new-transform existing-transforms)))
     ((%transform-graph 'put!) input-predicate new-transforms)))
 
@@ -47,15 +35,46 @@
     ((%transform-graph 'get) predicate)
     '()))
 
-(define (get-predicate-supers predicate)
-  ((%supertype-graph 'get-default) predicate '()))
-
 (define (register-type-transform! input-predicate output-predicate transformation)
   (add-to-transform-graph! input-predicate
     (if (predicate? output-predicate)
       (lambda (x) output-predicate)
       output-predicate) transformation))
-      
+
+;; ==============
+;; Supertypes 
+;; ==============
+
+;; Association list of input-predicate -> '(
+;;   predicate-supertype?
+;; )
+(define %supertype-graph)
+
+(define (reset-supertype-graph!)
+  (set! %supertype-graph (make-alist-store eq?)))
+
+(reset-supertype-graph!)
+
+(define (register-super! predicate-sub predicate-super)
+  (register-predicate! predicate-sub)
+  (register-predicate! predicate-super)
+
+  ((%supertype-graph 'put!) predicate-sub
+    (cons predicate-super (get-predicate-supers predicate-sub))))
+
+(define (get-predicate-supers predicate)
+  ((%supertype-graph 'get-default) predicate '()))
+
+;; ==============
+;; Transforms
+;; ==============
+
+;; Transforms are stored as (cons transform-input-predicate-to-output-fn transform-data-fn)
+;; Note transforms can be a compound list of transforms to apply to list of predicates
+
+(define (make-transform predicate-transformation transformation)
+  (cons predicate-transformation transformation))
+
 (define (transformation-predicate-transform transformation)
   (if (list? transformation)
     (lambda (in) 
@@ -77,23 +96,19 @@
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate (list input-predicate)))
 
-(define (two-crossproduct a b)
-  (flatten-one-layer
-     (map 
-      (lambda (a-el) 
-        (map 
-          (lambda (b-el) (cons a-el b-el)) 
-          b)) 
-      a)))
+(define identity-transform (make-transform identity identity))
 
-(define (crossproduct lists)
-  (fold-right two-crossproduct (list (list)) lists))
+(define (create-compound-transformation path)
+  (fold-left 
+    (lambda (compound-transformation transformation)
+      (lambda (in) 
+        ((transformation-data-transform transformation) (compound-transformation in))))
+    identity
+    path))
 
-(define (identity x) x)
-
-(define (flatten-one-layer list-of-lists) (apply append list-of-lists))
-
-(define identity-transform (cons identity identity))
+;; ==============
+;; Search Engine
+;; ==============
 
 (define (all-transforms-for-predicate input-predicate) 
   (if (list? input-predicate)
@@ -146,30 +161,15 @@
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate '()))
 
-(define identity (lambda (x) x))
-
-(define (create-compound-transformation path)
-  (fold-left 
-    (lambda (compound-transformation transformation)
-      (lambda (in) 
-        ((transformation-data-transform transformation) (compound-transformation in))))
-    identity
-    path))
-
 ;; ==============
 ;; Visualizing Transformations
 ;; ==============
 
-(define write
-  (lambda args
-    (write-line
-     (apply string-append
-	    (map (lambda (x) (string-append (string x) " ")) args)))))
-
 (define (debug-get-transformations-values input-predicate
 					  output-predicate
 					  input-value)
-  (write "------")
+  (write "*********************")
+  (write "*********************")
   (write "Attempting to transform" (get-name input-predicate) "to"
 		    (get-name output-predicate) "and showing with value" input-value)
   (let ((paths (get-transformations-internal input-predicate
@@ -177,13 +177,13 @@
     (write "Found" (length paths) "paths:")
       (for-each 
        (lambda (path)
-   (write-line "")
+    (write-line "------")
+   (write-line "Transforms:")
    (write-line (path-to-data-transform-names path))
-	 (write-line (map get-name (path-to-intermediate-predicates path input-predicate)))
+   (write-line "Predicates:")
+   (write-line (map get-name (path-to-intermediate-predicates path input-predicate)))
+   (write-line "Values:")
 	 (pp (path-to-intermediate-values path input-value))) paths)))
-
-(define (reverse items)
-  (fold-right (lambda (x r) (append r (list x))) '() items))
 
 (define (path-to-data-transform-names path)
   (map 
@@ -211,14 +211,8 @@
    (list input-value)
    path)))
 
-(define (transform input-predicate output-predicate input-value)
+(define (transform-with-first-path input-predicate output-predicate input-value)
   ((create-compound-transformation (car (get-transformations input-predicate output-predicate))) 
    input-value))
 
-(define (get-name f)
-  (let ((matches (filter
-      (lambda (el) (and (> (length el) 1) (eq? (car (cdr el)) f)))
-      (environment-bindings user-initial-environment))))
-    (if (>= (length matches) 1)
-      (car (car matches))
-      'missing-name-in-get-name-lookup)))
+'loaded-type-search-engine-successfully

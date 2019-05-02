@@ -51,9 +51,10 @@
 	     (generate-list-predicate (* 2 (get-list-predicate-length input_type))))
 	   duplicate-items-in-list)
 
-(write-line "Duplicating list length")
+(define list-len-2? (generate-list-predicate 2))
+(define list-len-4? (generate-list-predicate 4))
 
 (debug-get-transformations-values
- (generate-list-predicate 2)
- (generate-list-predicate 4)
+ list-len-2?
+ list-len-4?
  (list 2 3))

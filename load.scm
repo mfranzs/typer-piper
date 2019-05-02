@@ -1,15 +1,33 @@
-(let ((env (make-top-level-environment)))
-  (with-working-directory-pathname
-   (directory-pathname (current-load-pathname))
-   (lambda ()
-     (load
-      '("common/overrides"
-        "common/utils"
-        "common/collections"
-        "common/memoizers"
-        "common/applicability"
-        "common/simple-tests"
-        "common/trie")
-      env)))
-  (environment-define system-global-environment 'current-book-environment env)
-  (ge env))
+; (if (not (environment-bound? system-global-environment 'our-env))
+;   (load
+;     '("common/overrides"
+;       "common/utils"
+;       "common/collections"
+;       "common/memoizers"
+;       "common/applicability"
+;       "common/simple-tests"
+;       "common/trie"
+;       "helpers"))
+; )
+; (define our-env (make-top-level-environment))
+; ; (load
+; ;   '("common/overrides"
+; ;     "common/utils"
+; ;     "common/collections"
+; ;     "common/memoizers"
+; ;     "common/applicability"
+; ;     "common/simple-tests"
+; ;     "common/trie")
+; ;   our-env)
+; (environment-define system-global-environment 'our-env our-env)
+; (ge our-env)
+
+ (load
+    '("common/overrides"
+      "common/utils"
+      "common/collections"
+      "common/memoizers"
+      "common/applicability"
+      "common/simple-tests"
+      "common/trie"
+      "helpers"))
