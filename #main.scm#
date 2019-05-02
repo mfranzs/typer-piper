@@ -48,111 +48,94 @@
     '()))
 
 (define (get-predicate-supers predicate)
-  ((%supertype-graph 'get-default) predicate '()))
+  ((%supertype-graph 'get) predicate))
 
 (define (register-type-transform! input-predicate output-predicate transformation)
   (add-to-transform-graph! input-predicate
     (if (predicate? output-predicate)
       (lambda (x) output-predicate)
       output-predicate) transformation))
-      
-(define (transformation-predicate-transform transformation)
-  (if (list? transformation)
-    (lambda (in) 
-      (map
-        (lambda (value transform) ((transformation-predicate-transform transform) value)) 
-        in 
-        transformation))
-    (car transformation)))
 
-(define (transformation-data-transform transformation)
-  (if (list? transformation)
-    (lambda (in) 
-      (map 
-        (lambda (value transform) ((transformation-data-transform transform) value)) 
-        in 
-        transformation))
-    (cdr transformation)))
+(define transformation-predicate-transform car)
+
+(define transformation-data-transform cdr)
 
 (define (get-transformations input-predicate output-predicate)
-  (get-transformations-internal input-predicate output-predicate (list input-predicate)))
+  (get-transformations-internal input-predicate output-predicate '()))
 
 (define (two-crossproduct a b)
-  (flatten-one-layer
-     (map 
-      (lambda (a-el) 
-        (map 
-          (lambda (b-el) (cons a-el b-el)) 
-          b)) 
-      a)))
+  (apply append (map (lambda (a-el) (map (lambda (b-el) (cons a-el b-el)) b)) a)))
 
 (define (crossproduct lists)
   (fold-right two-crossproduct (list (list)) lists))
 
 (define (identity x) x)
 
-(define (flatten-one-layer list-of-lists) (apply append list-of-lists))
-
 (define identity-transform (cons identity identity))
 
-(define (all-transforms-for-predicate input-predicate) 
-  (if (list? input-predicate)
-    (crossproduct 
-      (map
-        (lambda (pred) (cons
-          identity-transform
-				  (get-predicate-transforms pred)))
-			  input-predicate))
-		(append
-		 (get-predicate-transforms input-predicate)
-		 (flatten-one-layer (map get-predicate-transforms
-				    (get-predicate-supers input-predicate))))))
-
-(define (apply-all-transforms-to-predicate input-predicate transforms)
-  (map
-    (lambda (transform)
-      ((transformation-predicate-transform transform) input-predicate))
-    transforms))
-
-(define (predicate-equal-or-supertype? pred target-pred)
-    (or
-      (equal? pred target-pred)
-      ;; Or are any of the supertypes equal to target-pred?
-      (any 
-        (lambda (super-pred) 
-          (predicate-equal-or-supertype? super-pred target-pred))
-        (get-predicate-supers pred)
-        )))
-
 (define (get-transformations-internal input-predicate output-predicate path-so-far)
-  (if (predicate-equal-or-supertype? input-predicate output-predicate)
+  (if (equal? input-predicate output-predicate)
       (list (list)) 
       (let*
-	      ((transforms (all-transforms-for-predicate input-predicate))
-	        (transform-intermediates (apply-all-transforms-to-predicate input-predicate transforms)))
-        (apply
-          append
-          (map
-            (lambda (intermediate-pred transformation)
-              (if (find (lambda (pred) (equal? pred intermediate-pred)) path-so-far)
-            '()
-            (map (lambda (path) (cons transformation path))
-                (get-transformations-internal
-                  intermediate-pred
-                  output-predicate
-                  (cons intermediate-pred path-so-far)))))
-            transform-intermediates transforms)))))
+	  ((transforms
+	    (if (list? input-predicate)
+		(crossproduct (map
+			       (lambda (pred) (cons
+					       identity-transform
+					       (get-predicate-transforms pred)))
+			       input-predicate))
+      
+		(append
+		 (get-predicate-transforms input-predicate)
+		 (apply append (map get-predicate-transforms
+				    (get-predicate-supers input-predicate))))))
+	   
+	   (transform-intermediates
+	    (if (list? input-predicate)
+		(map (lambda (compound-transform)
+		       ;; Go through each transfom in the compound
+		       ;; transform and transform the corresponding
+		       ;; predicate
+		       (map
+			(lambda (transform predicate)
+			  ((transformation-predicate-transform transform) predicate))
+			compound-transform
+			input-predicate))
+		     transforms)
+
+		(map
+		 (lambda (transform)
+		   ((transformation-predicate-transform transform) input-predicate))
+		 transforms))))
+	
+	(apply
+	 append
+	 (map
+	  (lambda (intermediate-pred transformation)
+	    (if (find (lambda (pred) (equal? pred intermediate-pred)) path-so-far)
+		'()
+		(map (lambda (path) (cons transformation path))
+		     (get-transformations-internal
+		      intermediate-pred
+		      output-predicate
+		      (cons intermediate-pred path-so-far)))))
+	  transform-intermediates transforms)))))
 
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate '()))
 
 (define identity (lambda (x) x))
 
+(define (get-transformation-f transformation)
+  (if (list? transformation)
+    (lambda (in) (map (lambda (value transform) ((transformation-data-transform transform) value)) in transformation))
+    (transformation-data-transform transformation)))
+
 (define (create-compound-transformation path)
   (fold-left 
     (lambda (compound-transformation transformation)
       (lambda (in) 
-        ((transformation-data-transform transformation) (compound-transformation in))))
+        ((get-transformation-f transformation) (compound-transformation in))))
     identity
     path))
 
@@ -166,6 +149,13 @@
      (apply string-append
 	    (map (lambda (x) (string-append (string x) " ")) args)))))
 
+(define (debug-get-transformations input-predicate output-predicate)
+  (let ((paths (get-transformations-internal input-predicate output-predicate '())))
+      (map 
+       (lambda (path)
+	 (path-to-intermediate-predicates path input-predicate))
+       paths)))
+
 (define (debug-get-transformations-values input-predicate
 					  output-predicate
 					  input-value)
@@ -177,28 +167,23 @@
     (write "Found" (length paths) "paths:")
       (for-each 
        (lambda (path)
-   (write-line "")
-   (write-line (path-to-data-transform-names path))
-	 (write-line (map get-name (path-to-intermediate-predicates path input-predicate)))
-	 (pp (path-to-intermediate-values path input-value))) paths)))
+	 (write-line "")
+	 (write-line (path-to-intermediate-predicates path input-predicate))
+	 (write-line
+	  (path-to-intermediate-values path input-value)))
+       paths)))
 
 (define (reverse items)
   (fold-right (lambda (x r) (append r (list x))) '() items))
-
-(define (path-to-data-transform-names path)
-  (map 
-    (lambda (transform)
-      (get-name (transformation-data-transform transform)))
-    path))
 
 (define (path-to-intermediate-predicates path input-predicate)
   (reverse
    (fold-left 
     (lambda (intermediate-predicates transformation)
       (cons 
-       ((transformation-predicate-transform transformation) (car intermediate-predicates))
+       (get-name ((transformation-predicate-transform transformation) (car intermediate-predicates)))
        intermediate-predicates))
-    (list input-predicate)
+    (list (get-name input-predicate))
     path)))
 
 (define (path-to-intermediate-values path input-value)
@@ -221,4 +206,37 @@
       (environment-bindings user-initial-environment))))
     (if (>= (length matches) 1)
       (car (car matches))
-      'missing-name-in-get-name-lookup)))
+      #f)))
+
+;; ==============
+;; Tests
+;; ==============
+
+(register-predicate! list?)
+(register-predicate! number?)
+(register-predicate! string?)
+
+(define (is-three? num) (eq? num 3))
+
+(register-predicate! is-three?)
+(register-super! is-three? number?)
+
+(register-type-transform! list? number? length)
+(register-type-transform! number? string? number->string)
+(register-type-transform! string? number? string->number)
+
+(debug-get-transformations-values list? string? '(1 2 3))
+
+(define (get-name f)
+  (let ((matches (filter
+      (lambda (el) (and (> (length el) 1) (eq? (car (cdr el)) f)))
+      (environment-bindings user-initial-environment))))
+
+    (if (>= (length matches) 1)
+      (car (car matches))
+      #f)))
+
+(debug-get-transformations-values is-three? string? 3)
+
+(transform (list number? string?) (list string? string?) (list 1 "2"))
+

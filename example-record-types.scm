@@ -32,7 +32,9 @@
 (define (person:age? x) (number? x))
 
 (register-predicate! person:first-name?)
+(register-super! person:first-name? printable-string?)
 (register-predicate! person:last-name?)
+(register-super! person:last-name? printable-string?)
 (register-predicate! person:age?)
 
 (register-type-transform! person? person:first-name?

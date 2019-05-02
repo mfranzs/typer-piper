@@ -42,6 +42,16 @@
             (error "Unknown key:" key))
         (cdr p)))
 
+
+    (define (get-default key default)
+      (let ((p
+             (find (lambda (p)
+                     (key=? (car p) key))
+                   alist)))
+        (if (not p)
+            default
+            (cdr p))))
+
     (define (get-matching predicate)
       (filter-map (lambda (p)
                     (and (predicate (car p))
@@ -61,6 +71,7 @@
         ((get-keys) get-keys)
         ((has?) has?)
         ((get) get)
+        ((get-default) get-default)
         ((get-matching) get-matching)
         ((put!) put!)
         (else (error "Unknown operator:" operator))))))
