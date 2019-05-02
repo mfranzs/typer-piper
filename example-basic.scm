@@ -21,3 +21,5 @@
 (debug-get-transformations-values list? string? '(1 2 3))
 
 (debug-get-transformations-values is-three? string? 3)
+
+(debug-transform-to 3 string?)

@@ -41,6 +41,9 @@
       (lambda (x) output-predicate)
       output-predicate) transformation))
 
+(define (all-predicates)
+  ((%transform-graph 'get-keys)))
+
 ;; ==============
 ;; Supertypes 
 ;; ==============
@@ -92,9 +95,6 @@
         in 
         transformation))
     (cdr transformation)))
-
-(define (get-transformations input-predicate output-predicate)
-  (get-transformations-internal input-predicate output-predicate (list input-predicate)))
 
 (define identity-transform (make-transform identity identity))
 
@@ -167,24 +167,25 @@
 
 (define (debug-get-transformations-values input-predicate
 					  output-predicate
-					  input-value)
+            input-value)
+  (write-line "")
   (write "*********************")
   (write "*********************")
   (write "Attempting to transform" (get-name input-predicate) "to"
 		    (get-name output-predicate) "and showing with value" input-value)
-  (let ((paths (get-transformations-internal input-predicate
-					    output-predicate '())))
+  (let ((paths (get-transformations input-predicate output-predicate)))
     (write "Found" (length paths) "paths:")
-      (for-each 
-       (lambda (path)
-    (write-line "------")
+    (for-each (lambda (path) (print-path-data path input-predicate input-value)) paths)))
+
+(define (print-path-data path input-predicate input-value)
+  (write-line "------")
    (write-line "Transforms:")
    (write-line (path-to-data-transform-names path))
    (write-line "Predicates:")
    (write-line (map get-name (path-to-intermediate-predicates path input-predicate)))
    (write-line "Values:")
-	 (pp (path-to-intermediate-values path input-value))) paths)))
-
+   (pp (path-to-intermediate-values path input-value)))
+   
 (define (path-to-data-transform-names path)
   (map 
     (lambda (transform)
@@ -211,8 +212,31 @@
    (list input-value)
    path)))
 
+
 (define (transform-with-first-path input-predicate output-predicate input-value)
   ((create-compound-transformation (car (get-transformations input-predicate output-predicate))) 
    input-value))
+  
+(define (debug-transform-to input-value output-predicate)
+  (write-line "")
+  (write "*********************")
+  (write "*********************")
+  (write "Attempting to transform" input-value "to" (get-name output-predicate))
+  (let*
+    ((matching-predicates (filter (lambda (pred) (pred input-value)) (all-predicates)))
+     (paths-by-predicate
+      (map
+       (lambda (input-predicate) (get-transformations input-predicate output-predicate))
+       matching-predicates))
+      (all-paths (flatten-one-layer paths-by-predicate)))
+
+    (write "Found" (length all-paths) "paths:")
+    (for-each 
+      (lambda (paths input-predicate)
+        (for-each
+          (lambda (path) (print-path-data path input-predicate input-value))
+          paths))
+      paths-by-predicate 
+      matching-predicates)))
 
 'loaded-type-search-engine-successfully
