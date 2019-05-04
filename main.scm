@@ -181,6 +181,35 @@
 	       (apply-transformation-data-transform
 		transform in)))))))
 
+(define (pred-to-string predicate)
+  (symbol->string (get-name predicate)))
+
+(define (codegen-path path input-predicate output-predicate)
+  (list
+   'define
+   (list (string->symbol (string-append
+	  (pred-to-string input-predicate)
+	  "-to-"
+	  (pred-to-string output-predicate)))
+	  'input)
+   (codegen-path-inner (reverse path))))
+  
+(define (codegen-path-inner path)
+  (if (null? path)
+      'input
+      (let ((transform (car path)))
+	(if (and (> (length path) 1) (is-joiner-transform? (cadr path)))
+	    (cons
+	     (get-name (transformation-data-transform transform))
+	     (map
+	      (lambda (joiner-sub-path)
+		(codegen-path-inner (reverse joiner-sub-path)))
+	      (joiner-transform-paths-list (cadr path))))
+	    (list
+	     (get-name (transformation-data-transform transform))
+	     (codegen-path-inner (cdr path)))
+	    ))))
+
 (define (create-compound-transformation-debugger-transforms path)
   (if (null? path)
       (lambda (x) '())
@@ -410,48 +439,27 @@
 		    (get-name output-predicate) "and showing with value" input-value)
   (let ((paths (get-transformations input-predicate output-predicate)))
     (write "Found" (length paths) "paths:")
-    (for-each (lambda (path) (print-path-data path input-predicate input-value)) paths)))
+    (for-each (lambda (path) (print-path-data path input-predicate output-predicate input-value)) paths)))
 
-(define (print-path-data path input-predicate input-value)
+(define (print-path-data path input-predicate output-predicate input-value)
   (write-line "------")
+  
   (write-line "Output value:")
   (write-line ((create-compound-transformation path) input-value))
+  
   (write-line "Transforms:")
-     (pp ((create-compound-transformation-debugger-transforms path) input-value))
-;   (write-line (path-to-data-transform-names path))
-   (write-line "Predicates:")
-   (pp ((create-compound-transformation-debugger-predicates path) input-value))
-;   (write-line (map get-name (path-to-intermediate-predicates path input-predicate)))
-   (write-line "Values:")
-   (pp ((create-compound-transformation-debugger-values path) input-value)))
-;   (pp (path-to-intermediate-values path input-value)))
+  (pp ((create-compound-transformation-debugger-transforms path)
+       input-value))
+  
+  (write-line "Code Gen:")
+  (pp (codegen-path path input-predicate output-predicate))
+
+  (write-line "Predicates:")
+  (pp ((create-compound-transformation-debugger-predicates path) input-value))
    
-(define (path-to-data-transform-names path)
-  (map 
-    (lambda (transform)
-      (get-name (transformation-data-transform transform)))
-    path))
-
-(define (path-to-intermediate-predicates path input-predicate)
-  (reverse
-   (fold-left 
-    (lambda (intermediate-predicates transformation)
-      (cons 
-       ((transformation-predicate-transform transformation) (car intermediate-predicates))
-       intermediate-predicates))
-    (list input-predicate)
-    path)))
-
-(define (path-to-intermediate-values path input-value)
-  (reverse
-  (fold-left 
-   (lambda (intermediate-values transformation)
-      (cons 
-       (apply-transformation-data-transform transformation (car intermediate-values))
-       intermediate-values))
-   (list input-value)
-   path)))
-
+  (write-line "Values:")
+  (pp ((create-compound-transformation-debugger-values path) input-value)))
+   
 
 (define (transform-with-first-path input-predicate output-predicate input-value)
   ((create-compound-transformation (car (get-transformations input-predicate output-predicate))) 
