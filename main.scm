@@ -54,6 +54,9 @@
 			   output-predicate
 			   transformation))
 
+(define (pred-to-string predicate)
+  (symbol->string (get-name predicate)))
+
 (define (all-predicates)
   ((%transform-graph 'get-keys)))
 
@@ -88,11 +91,24 @@
 ;; Transforms
 ;; ==============
 
-;; Transforms are stored as (cons transform-input-predicate-to-output-fn transform-data-fn)
-;; Note transforms can be a compound list of transforms to apply to list of predicates
+;; Transforms translate a value of type input-predicate to a new type
+
+;; There are three types of transforms:
+;; 1. Normal transforms
+;; 2. Compound transforms (a list of transforms that transform a list
+;; of values in parallel)
+;; 3. Joiner transforms (a transform that takes a list of paths from
+;; the input to intermediate predicates and joins them into a list)
+
+;; Normal transforms are stored as (cons transform-input-predicate-to-output-fn transform-data-fn)
+;; Note transforms can be a compound list of transforms to apply to
+;; list of predicates
 
 (define (make-transform input-predicate predicate-transformation transformation)
   (cons input-predicate (cons predicate-transformation transformation)))
+
+;; Joiner transforms just store their compound predicate and their
+;; list of paths
 
 (define (make-joiner-transform compound-predicate paths-list)
   (cons 'joiner (cons compound-predicate paths-list)))
@@ -112,6 +128,7 @@
 (define (transformation-input-predicate transformation)
   (car transformation))
 
+;; Returns a function that transforms the input-predicate to the output
 (define (transformation-predicate-transform transformation)
   (lambda (in)
     (cond
@@ -125,6 +142,7 @@
      (else
 	((cadr transformation) in)))))
 
+;; Returns a function that transforms the input-value with the given transformation
 (define (transformation-data-transform transformation)
   (cond
    ((is-joiner-transform? transformation)
@@ -153,6 +171,11 @@
 ;; ==============
 ;; Paths
 ;; ==============
+
+;; A path is a list (or a tree) of transforms that takes the input and
+;; transforms it to the output.
+;; (A path can be a tree if it has a joiner transform. In that case,
+;; each of the leafs takes in the input).
 
 (define (remove-from-path-before-joiner path)
   (let ((reversed-path (reverse path)))
@@ -184,9 +207,6 @@
 	      (transform-rest-of-path
 	       (apply-transformation-data-transform
 		transform in)))))))
-
-(define (pred-to-string predicate)
-  (symbol->string (get-name predicate)))
 
 (define (codegen-path path input-predicate output-predicate)
   (list
@@ -292,10 +312,7 @@
 ;; ==============
 ;; Search Engine
 ;; ==============
-
-(define (transforms-using-reached-predicates input-predicate
-					     reached-predicates) 1)
-  
+;; The core search engine.
 
 (define (all-transforms-for-compound-predicate input-predicate)
   (assert (list? input-predicate))
