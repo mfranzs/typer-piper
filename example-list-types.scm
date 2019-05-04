@@ -34,10 +34,10 @@
   (hash-table-set! list-predicate-lengths list-predicate-with-length? length))
 
 (define (get-list-predicate-length list-predicate-with-length?)
-  (hash-table-ref list-predicate-lengths list-predicate-with-length?))
+  (hash-table/get list-predicate-lengths list-predicate-with-length? -1))
 
 ;; ===================
-;; example: duplicating list length
+;; Example: duplicating list length
 ;; ===================
 
 (define (duplicate-items-in-list lst)
@@ -45,9 +45,9 @@
 
 (duplicate-items-in-list (list 1 2))
 
-(register-type-transform!
+(register-type-transform-f!
            length-list?
-	   (lambda (input_type) 
+     (lambda (input_type) 
 	     (generate-list-predicate (* 2 (get-list-predicate-length input_type))))
 	   duplicate-items-in-list)
 
@@ -58,3 +58,27 @@
  list-len-2?
  list-len-4?
  (list 2 3))
+
+;; ===================
+;; Example: Points
+;; ===================
+
+; (define point? (generate-list-predicate 2))
+
+; (define (add-elements-in-lists list-a list-b)
+;   (map (lambda (a b) (+ a b)) list-a list-b))
+
+; (duplicate-items-in-list (list 1 2))
+
+; (register-type-transform!
+;     length-list?
+; 	  (lambda (input_type) input_type)
+; 	  add-elements-in-listsx`xxl)
+
+; (define list-len-2? (generate-list-predicate 2))
+; (define list-len-4? (generate-list-predicate 4))
+
+; (debug-get-transformations-values
+;  list-len-2?
+;  list-len-4?
+;  (list 2 3))

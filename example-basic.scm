@@ -18,8 +18,10 @@
 (register-type-transform! number? string? number->string)
 (register-type-transform! string? number? string->number)
 
+; (debug-get-transformations-values number? string? 1)
+
 (debug-get-transformations-values list? string? '(1 2 3))
 
-(debug-get-transformations-values is-three? string? 3)
+; (debug-get-transformations-values is-three? string? 3)
 
-(debug-transform-to 3 string?)
+; (debug-transform-to 3 string?)

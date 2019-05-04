@@ -16,12 +16,14 @@
 (define (flatten-one-layer list-of-lists) (apply append list-of-lists))
 
 (define (get-name f)
-  (let ((matches (filter
-      (lambda (el) (and (> (length el) 1) (eq? (car (cdr el)) f)))
-      (environment-bindings user-initial-environment))))
-    (if (>= (length matches) 1)
-      (car (car matches))
-      'missing-name-in-get-name-lookup)))
+  (if (list? f) 
+    (map get-name f)
+    (let ((matches (filter
+        (lambda (el) (and (> (length el) 1) (eq? (car (cdr el)) f)))
+        (environment-bindings user-initial-environment))))
+      (if (>= (length matches) 1)
+        (car (car matches))
+        'missing-name-in-get-name-lookup))))
 
 (define write
   (lambda args
@@ -31,3 +33,9 @@
 
 (define (reverse items)
   (fold-right (lambda (x r) (append r (list x))) '() items))
+
+(define (boolean->string val) (if val "#t" "#f"))
+
+(define (alist:keys alist) (map car alist))
+
+(define (always-true x) #t)
