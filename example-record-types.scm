@@ -64,6 +64,7 @@
    (lambda (fn) 
     (string-append 
       (full-name:first-name fn) 
+      " "
       (full-name:last-name fn))) )
 
 
@@ -87,6 +88,7 @@
    (lambda (ftn) 
     (string-append 
       (formal-title-name:formal-title ftn) 
+        " "
       (formal-title-name:last-name ftn))) )
 
 ;; Tests

@@ -1,4 +1,10 @@
 ;; ==============
+;; ==============
+;; The Type Transformation Search Engine
+;; ==============
+;; ==============
+
+;; ==============
 ;; Type Transform Graph
 ;; ==============
 
@@ -147,8 +153,6 @@
 ;; ==============
 ;; Paths
 ;; ==============
-
-(define (last lst) (car (last-pair lst)))
 
 (define (remove-from-path-before-joiner path)
   (let ((reversed-path (reverse path)))
@@ -325,7 +329,6 @@
   (flatten-one-layer
    (map (lambda (compound-predicate)
 	  (map (lambda (paths-list)
-;		 (write "found way to make" compound-predicate "from" input-predicate)
 		 (make-joiner-transform
 		  compound-predicate
 		  paths-list))
@@ -343,7 +346,6 @@
 
 (define (all-transforms-for-predicate input-predicate
 				      reached-predicates path-so-far)
-;  (write "ATFP" (get-name input-predicate) (map get-name (hash-table-keys reached-predicates)))
   (append
    (if (list? input-predicate)
     (all-transforms-for-compound-predicate input-predicate)
@@ -369,10 +371,12 @@
         (get-predicate-supers pred)
         )))
 
+(define MAX_SEARCH_DEPTH 10)
+
 (define (get-transformations-internal input-predicate output-predicate
 				      path-so-far reached-predicates
 				      seen-predicates)
-  (if (> (length path-so-far) 10)
+  (if (> (length path-so-far) MAX_SEARCH_DEPTH)
       (list)
   (append
    ;; If we've hit the goal, add a "termination" to our path list, but
