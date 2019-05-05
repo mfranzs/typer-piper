@@ -1,0 +1,16 @@
+\begin{tikzpicture}
+\begin{scope}[every node/.style={circle,thick,draw}]
+    \node (A) at (0,0) {\texttt{string?}};
+    \node (B) at (3,3) {\texttt{number?}};
+    \node (C) at (6,0) {\texttt{list?}};
+\end{scope}
+
+\begin{scope}[>={Stealth[black]},
+              every node/.style={fill=white},
+              every edge/.style={draw=black,very thick}]
+    \path [->] (A) edge[bend left=40] node {\texttt{string->number}} (B);
+    \path [->] (B) edge[bend left=40] node {\texttt{number->string}} (A);
+    \path [->] (C) edge node {\texttt{length}} (B);
+    \path [->] (A) edge[bend right=20] node {\texttt{split}} (C);
+\end{scope}
+\end{tikzpicture}
