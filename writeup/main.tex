@@ -131,6 +131,11 @@ Programmers can interact with our system through the following method calls.  Mo
 
 \section{Discussion}
 
+A common goal of programming languages is to minimize the amount of code that needs to be written.  The programmer should be able to specify what they want as tersely as possible, and the computer should do the rest.  We propose one such mechanism for allowing computers and languages to infer large components of programs, by focusing on types and conversion flows between them.  Changing one's perspective to view more of computation as type conversion provides a framework from which more of the program can be easily inferred by a smart compiler.
+
+Another interesting aspect of this project is the collaborative nature between our system and the programmer.  By being less verbose in our programming, we force the system to ask us clarifying questions; in this case, which type flow to pick.  We think this is a necessary trade-off for more advanced programming environments, and possibly a useful direction for future research.
+
+We'd also like to note that many of the ideas in this paper are not wholly original.  Our type inference is similar to Prolog's logic-based programming.  Scala has ``implicit conversions,'' which allows the definition of automatic conversions between types (but not chaining without significant extra work).
 
 \appendix
 \section{Github Repo Link}
