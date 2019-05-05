@@ -41,11 +41,11 @@
 (register-super! person:age? integer?)
 
 (register-type-transform! person? first-name?
-			       person:first-name)
+             person:first-name)
 (register-type-transform! person? last-name?
-			       person:last-name)
+             person:last-name)
 (register-type-transform! person? person:age?
-			       person:age)
+             person:age)
 
 (define-record-type FullName
   (make-full-name first-name last-name)

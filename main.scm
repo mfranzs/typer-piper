@@ -42,17 +42,17 @@
     '()))
 
 (define (register-type-transform! input-predicate output-predicate
-				  transformation)
+          transformation)
   (assert (or (predicate? input-predicate) (list? input-predicate)) input-predicate)
   (assert (or (predicate? output-predicate) (list? output-predicate)))
   (add-to-transform-graph! input-predicate
-			   (lambda (x) output-predicate)
-			   transformation))
+         (lambda (x) output-predicate)
+         transformation))
 
 (define (register-type-transform-f! input-predicate output-predicate transformation)
   (add-to-transform-graph! input-predicate
-			   output-predicate
-			   transformation))
+         output-predicate
+         transformation))
 
 (define (pred-to-string predicate)
   (symbol->string (get-name predicate)))
@@ -135,12 +135,12 @@
      ((is-joiner-transform? transformation)
       (joiner-transform-output-predicate transformation))
      ((is-compound-transform? transformation)
-	(map
-	 (lambda (value transform) ((transformation-predicate-transform transform) value)) 
-	 in 
-	 transformation))
+  (map
+   (lambda (value transform) ((transformation-predicate-transform transform) value)) 
+   in 
+   transformation))
      (else
-	((cadr transformation) in)))))
+  ((cadr transformation) in)))))
 
 ;; Returns a function that transforms the input-value with the given transformation
 (define (transformation-data-transform transformation)
@@ -149,7 +149,7 @@
     (lambda (in)
       (map
        (lambda (path)
-	 ((create-compound-transformation path) in))
+   ((create-compound-transformation path) in))
        (joiner-transform-paths-list transformation))))
    ((is-compound-transform? transformation)
     (lambda (in) 
@@ -163,8 +163,8 @@
 (define (apply-transformation-data-transform transformation in-value)
   (let ((dt-fn (transformation-data-transform transformation)))
     (if (list? (transformation-input-predicate transformation))
-	(apply dt-fn in-value)
-	(dt-fn in-value))))
+  (apply dt-fn in-value)
+  (dt-fn in-value))))
 
 (define identity-transform (make-transform always-true identity identity))
 
@@ -181,133 +181,133 @@
   (let ((reversed-path (reverse path)))
     (define (recurse-build remaining-reversed-path built-path)
       (if (null? remaining-reversed-path)
-	  built-path
-	  (let ((transform (car remaining-reversed-path)))
-	    (if (is-joiner-transform? transform)
-		(cons transform built-path)
-		(recurse-build
-		 (cdr remaining-reversed-path)
-		 (cons transform built-path))))))
+    built-path
+    (let ((transform (car remaining-reversed-path)))
+      (if (is-joiner-transform? transform)
+    (cons transform built-path)
+    (recurse-build
+     (cdr remaining-reversed-path)
+     (cons transform built-path))))))
     (recurse-build reversed-path '())))
 
 (define (create-compound-transformation path)
   (if (null? path)
       identity
       (let ((transform-rest-of-path
-	     (create-compound-transformation (cdr path)))
-	    (transform (car path)))
-	(if (is-joiner-transform? transform)
-	    (lambda (in)
-	      (transform-rest-of-path
-	       (map
-		(lambda (joiner-sub-path)
-		  ((create-compound-transformation joiner-sub-path) in))
-		(joiner-transform-paths-list transform))))
-	    (lambda (in)
-	      (transform-rest-of-path
-	       (apply-transformation-data-transform
-		transform in)))))))
+       (create-compound-transformation (cdr path)))
+      (transform (car path)))
+  (if (is-joiner-transform? transform)
+      (lambda (in)
+        (transform-rest-of-path
+         (map
+    (lambda (joiner-sub-path)
+      ((create-compound-transformation joiner-sub-path) in))
+    (joiner-transform-paths-list transform))))
+      (lambda (in)
+        (transform-rest-of-path
+         (apply-transformation-data-transform
+    transform in)))))))
 
 (define (codegen-path path input-predicate output-predicate)
   (list
    'define
    (list (string->symbol (string-append
-	  (pred-to-string input-predicate)
-	  "-to-"
-	  (pred-to-string output-predicate)))
-	  'input)
+    (pred-to-string input-predicate)
+    "-to-"
+    (pred-to-string output-predicate)))
+    'input)
    (codegen-path-inner (reverse path))))
   
 (define (codegen-path-inner path)
   (if (null? path)
       'input
       (let ((transform (car path)))
-	(if (and (> (length path) 1) (is-joiner-transform? (cadr path)))
-	    (cons
-	     (get-name (transformation-data-transform transform))
-	     (map
-	      (lambda (joiner-sub-path)
-		(codegen-path-inner (reverse joiner-sub-path)))
-	      (joiner-transform-paths-list (cadr path))))
-	    (list
-	     (get-name (transformation-data-transform transform))
-	     (codegen-path-inner (cdr path)))
-	    ))))
+  (if (and (> (length path) 1) (is-joiner-transform? (cadr path)))
+      (cons
+       (get-name (transformation-data-transform transform))
+       (map
+        (lambda (joiner-sub-path)
+    (codegen-path-inner (reverse joiner-sub-path)))
+        (joiner-transform-paths-list (cadr path))))
+      (list
+       (get-name (transformation-data-transform transform))
+       (codegen-path-inner (cdr path)))
+      ))))
 
 (define (create-compound-transformation-debugger-transforms path)
   (if (null? path)
       (lambda (x) '())
       (let ((transform-rest-of-path
-	     (create-compound-transformation-debugger-transforms (cdr path)))
-	    (transform (car path)))
-	(if (is-joiner-transform? transform)
-	    (lambda (in)
-	      (list 
-		(map
-		 (lambda (joiner-sub-path)
-		   ((create-compound-transformation-debugger-transforms joiner-sub-path) in))
-		 (joiner-transform-paths-list transform))
-	       (transform-rest-of-path
-		(map
-		 (lambda (joiner-sub-path)
-		   ((create-compound-transformation joiner-sub-path) in))
-		 (joiner-transform-paths-list transform)))))
-	    (lambda (in)
-	      (cons
-	       (get-name (transformation-data-transform transform))
-	       (transform-rest-of-path
-		(apply-transformation-data-transform
-		 transform in))))))))
+       (create-compound-transformation-debugger-transforms (cdr path)))
+      (transform (car path)))
+  (if (is-joiner-transform? transform)
+      (lambda (in)
+        (list 
+    (map
+     (lambda (joiner-sub-path)
+       ((create-compound-transformation-debugger-transforms joiner-sub-path) in))
+     (joiner-transform-paths-list transform))
+         (transform-rest-of-path
+    (map
+     (lambda (joiner-sub-path)
+       ((create-compound-transformation joiner-sub-path) in))
+     (joiner-transform-paths-list transform)))))
+      (lambda (in)
+        (cons
+         (get-name (transformation-data-transform transform))
+         (transform-rest-of-path
+    (apply-transformation-data-transform
+     transform in))))))))
 
 (define (create-compound-transformation-debugger-predicates path)
   (if (null? path)
       (lambda (x) '())
       (let ((transform-rest-of-path
-	     (create-compound-transformation-debugger-predicates (cdr path)))
-	    (transform (car path)))
-	(if (is-joiner-transform? transform)
-	    (lambda (in)
-	      (list 
-		(map
-		 (lambda (joiner-sub-path)
-		   ((create-compound-transformation-debugger-predicates joiner-sub-path) in))
-		 (joiner-transform-paths-list transform))
-	       (transform-rest-of-path
-		(map
-		 (lambda (joiner-sub-path)
-		   ((create-compound-transformation joiner-sub-path) in))
-		 (joiner-transform-paths-list transform)))))
-	    (lambda (in)
-	      (cons
-	       (get-name ((transformation-predicate-transform transform) (transformation-input-predicate transform)))
-	       (transform-rest-of-path
-		(apply-transformation-data-transform
-		 transform in))))))))
+       (create-compound-transformation-debugger-predicates (cdr path)))
+      (transform (car path)))
+  (if (is-joiner-transform? transform)
+      (lambda (in)
+        (list 
+    (map
+     (lambda (joiner-sub-path)
+       ((create-compound-transformation-debugger-predicates joiner-sub-path) in))
+     (joiner-transform-paths-list transform))
+         (transform-rest-of-path
+    (map
+     (lambda (joiner-sub-path)
+       ((create-compound-transformation joiner-sub-path) in))
+     (joiner-transform-paths-list transform)))))
+      (lambda (in)
+        (cons
+         (get-name ((transformation-predicate-transform transform) (transformation-input-predicate transform)))
+         (transform-rest-of-path
+    (apply-transformation-data-transform
+     transform in))))))))
 
 (define (create-compound-transformation-debugger-values path)
   (if (null? path)
       identity
       (let ((transform-rest-of-path
-	     (create-compound-transformation-debugger-values (cdr path)))
-	    (transform (car path)))
-	(if (is-joiner-transform? transform)
-	    (lambda (in)
-	      (list 
-		(map
-		 (lambda (joiner-sub-path)
-		   ((create-compound-transformation-debugger-values joiner-sub-path) in))
-		 (joiner-transform-paths-list transform))
-	       (transform-rest-of-path
-		(map
-		 (lambda (joiner-sub-path)
-		   ((create-compound-transformation joiner-sub-path) in))
-		 (joiner-transform-paths-list transform)))))
-	    (lambda (in)
-	      (cons
-	       in
-	       (transform-rest-of-path
-		(apply-transformation-data-transform
-		 transform in))))))))
+       (create-compound-transformation-debugger-values (cdr path)))
+      (transform (car path)))
+  (if (is-joiner-transform? transform)
+      (lambda (in)
+        (list 
+    (map
+     (lambda (joiner-sub-path)
+       ((create-compound-transformation-debugger-values joiner-sub-path) in))
+     (joiner-transform-paths-list transform))
+         (transform-rest-of-path
+    (map
+     (lambda (joiner-sub-path)
+       ((create-compound-transformation joiner-sub-path) in))
+     (joiner-transform-paths-list transform)))))
+      (lambda (in)
+        (cons
+         in
+         (transform-rest-of-path
+    (apply-transformation-data-transform
+     transform in))))))))
 
 ;; ==============
 ;; Search Engine
@@ -319,12 +319,12 @@
   (crossproduct 
    (map
     (lambda (pred) (cons
-		    identity-transform
-		    ;; Note we don't add the reached-predicates table
-		    ;; here so it doesn't try to make nested compound predicates
-		    (all-transforms-for-predicate pred
-						  (make-equal-hash-table)
-						  (list))))
+        identity-transform
+        ;; Note we don't add the reached-predicates table
+        ;; here so it doesn't try to make nested compound predicates
+        (all-transforms-for-predicate pred
+              (make-equal-hash-table)
+              (list))))
     input-predicate)))
 
 (define (all-valid-compound-predicates input-predicate reached-predicates)
@@ -334,35 +334,35 @@
   (filter
    (lambda (compound-predicate)
      (and (member input-predicate compound-predicate)
-	  (every
-	   (lambda (sub-predicate)
-	     (or (equal? sub-predicate input-predicate)
-		 (hash-table/get reached-predicates sub-predicate #f)))
-	   compound-predicate)))
+    (every
+     (lambda (sub-predicate)
+       (or (equal? sub-predicate input-predicate)
+     (hash-table/get reached-predicates sub-predicate #f)))
+     compound-predicate)))
   (all-compound-predicates)))
 
 (define (all-joiner-transforms input-predicate reached-predicates
-				 path-so-far)
+         path-so-far)
   (flatten-one-layer
    (map (lambda (compound-predicate)
-	  (map (lambda (paths-list)
-		 (make-joiner-transform
-		  compound-predicate
-		  paths-list))
-	       ;; Find all possible paths we can combine to form this
-	       ;; compound-predicate
-	       (crossproduct
-		(map
-		 (lambda (sub-predicate)
-		   (if (equal? sub-predicate input-predicate)
-		       (list path-so-far)
-		       (hash-table-ref reached-predicates sub-predicate)))
-		 compound-predicate))
-	       ))
-	(all-valid-compound-predicates input-predicate reached-predicates))))
+    (map (lambda (paths-list)
+     (make-joiner-transform
+      compound-predicate
+      paths-list))
+         ;; Find all possible paths we can combine to form this
+         ;; compound-predicate
+         (crossproduct
+    (map
+     (lambda (sub-predicate)
+       (if (equal? sub-predicate input-predicate)
+           (list path-so-far)
+           (hash-table-ref reached-predicates sub-predicate)))
+     compound-predicate))
+         ))
+  (all-valid-compound-predicates input-predicate reached-predicates))))
 
 (define (all-transforms-for-predicate input-predicate
-				      reached-predicates path-so-far)
+              reached-predicates path-so-far)
   (append
    (if (list? input-predicate)
     (all-transforms-for-compound-predicate input-predicate)
@@ -370,7 +370,7 @@
    (get-predicate-transforms input-predicate)
    (all-joiner-transforms input-predicate reached-predicates path-so-far)
    (flatten-one-layer (map get-predicate-transforms
-			    (get-predicate-supers input-predicate)))))
+          (get-predicate-supers input-predicate)))))
 
 (define (apply-all-transforms-to-predicate input-predicate transforms)
   (map
@@ -391,28 +391,28 @@
 (define MAX_SEARCH_DEPTH 10)
 
 (define (get-transformations-internal input-predicate output-predicate
-				      path-so-far reached-predicates
-				      seen-predicates)
+              path-so-far reached-predicates
+              seen-predicates)
   (if (> (length path-so-far) MAX_SEARCH_DEPTH)
       (list)
   (append
    ;; If we've hit the goal, add a "termination" to our path list, but
    ;; also keep search in case we're only actually at a subtype of our goal
    (if (predicate-equal-or-supertype? input-predicate
-				      output-predicate)
+              output-predicate)
        (list (list)) ;; Valid path with no more transforms needed
        (list))
    (let*
        ((transforms (all-transforms-for-predicate
-		     input-predicate reached-predicates path-so-far))
-	(transform-intermediates
-	 (apply-all-transforms-to-predicate input-predicate
-					    transforms)))
+         input-predicate reached-predicates path-so-far))
+  (transform-intermediates
+   (apply-all-transforms-to-predicate input-predicate
+              transforms)))
      (hash-table-set!
       reached-predicates
       input-predicate
       (cons path-so-far (hash-table/get reached-predicates
-					input-predicate '())))
+          input-predicate '())))
      
      (write "Search reached" (get-name input-predicate) "after #steps= " (length path-so-far))
      
@@ -422,42 +422,42 @@
        ;; Loop over each of the intermediate transforms and find all
        ;; paths from there
        (map 
-	(lambda (intermediate-pred transformation)
-	  ;; Check we haven't already been to this predicate
-	  (if (member intermediate-pred seen-predicates)
-	      '()
-	      (let ((new-path-so-far
-		     (if (is-joiner-transform? transformation)
-			 (list transformation)
-			 (cons transformation path-so-far))))
-		;; Recursively find all paths from this
-		;; intermediate-predicate to the end-predicate
-		(map (lambda (path) (cons transformation path))
-		     (get-transformations-internal
-		      intermediate-pred
-		      output-predicate
-		      new-path-so-far
-		      reached-predicates
-		      (cons intermediate-pred seen-predicates))))))
-	transform-intermediates
-	transforms)))))))
+  (lambda (intermediate-pred transformation)
+    ;; Check we haven't already been to this predicate
+    (if (member intermediate-pred seen-predicates)
+        '()
+        (let ((new-path-so-far
+         (if (is-joiner-transform? transformation)
+       (list transformation)
+       (cons transformation path-so-far))))
+    ;; Recursively find all paths from this
+    ;; intermediate-predicate to the end-predicate
+    (map (lambda (path) (cons transformation path))
+         (get-transformations-internal
+          intermediate-pred
+          output-predicate
+          new-path-so-far
+          reached-predicates
+          (cons intermediate-pred seen-predicates))))))
+  transform-intermediates
+  transforms)))))))
 
 (define (get-transformations input-predicate output-predicate)
   (get-transformations-internal input-predicate output-predicate '()
-				(make-equal-hash-table) (list input-predicate)))
+        (make-equal-hash-table) (list input-predicate)))
 
 ;; ==============
 ;; Visualizing Transformations
 ;; ==============
 
 (define (debug-get-transformations-values input-predicate
-					  output-predicate
+            output-predicate
             input-value)
   (write-line "")
   (write "*********************")
   (write "*********************")
   (write "Attempting to transform" (get-name input-predicate) "to"
-		    (get-name output-predicate) "and showing with value" input-value)
+        (get-name output-predicate) "and showing with value" input-value)
   (let ((paths (get-transformations input-predicate output-predicate)))
     (write "Found" (length paths) "paths:")
     (for-each (lambda (path) (print-path-data path input-predicate output-predicate input-value)) paths)))
