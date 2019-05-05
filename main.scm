@@ -503,7 +503,7 @@
     (for-each 
       (lambda (paths input-predicate)
         (for-each
-          (lambda (path) (print-path-data path input-predicate input-value))
+          (lambda (path) (print-path-data path input-predicate output-predicate input-value))
           paths))
       paths-by-predicate 
       matching-predicates)))

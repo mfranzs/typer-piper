@@ -24,4 +24,4 @@
 
 ; (debug-get-transformations-values is-three? string? 3)
 
-; (debug-transform-to 3 string?)
+(debug-transform-to 3 string?)
