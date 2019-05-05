@@ -24,3 +24,4 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*.pygstyle
