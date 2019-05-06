@@ -62,7 +62,7 @@ In addition to the predicate transformation graph, we also store a graph of pred
 
 Given the previously defined predicate conversion graph, conversion paths between simple predicates such as \texttt{string?}, \texttt{number?}, and even \texttt{list-len-2?} can be found with a basic backtracking search.  Introducing subtypes only slightly increases complexity by forcing the search to consider edges not only from the source node, but also from any supertype nodes.
 
-However, if we want to allow even more complex type chaining, we should be able to operate not just on predicates, but on groups of predicates, or ``compound predicates''.  For example, if we define a transformation from \texttt{(number? number?)} to \texttt{point?}, our search engine should be able to convert \texttt{(string?, string?)} to \texttt{point?}.  We call these operations on compound predicates \textit{compound transformations}.
+However, if we want to allow even more complex type chaining, we should be able to operate not just on predicates, but on groups of predicates, or ``compound predicates''.  For example, if we define a transformation from \texttt{(number? number?)} to \texttt{point?}, our search engine should be able to convert \texttt{(string?, string?)} to \texttt{point?} (by first separately converting each string to a number).  We call these operations on compound predicates \textit{compound transformations}.
 
 Finally, in addition to being able to manipulate and transform compound predicates, we should also be able to branch transformations to form them.  Using our \texttt{point?} example again, if we've defined \texttt{point:x} and \texttt{point:y} as transformations from \texttt{point?} to \texttt{number?}, we should be able to infer a path from \texttt{point?} to \texttt{(number? number?)}.  We call these operations of branching into compound predicates \textit{joiner transformations}.
 
@@ -128,6 +128,105 @@ Programmers can interact with our system through the following method calls.  Mo
   \doc{(debug-transform-to input-value output-predicate)}{Infer the input type, and return all possible transformations to the output-predicate while printing path information to the console.}{(debug-transform-to 5 string?)}
 \end{list}
 
+\section{Examples}
+
+Our attached code provides examples of our system in action. We highlight two examples here.
+
+\subsection{Record Types}
+We explore an example where we have a "database" of records of people. We represent this in scheme with a record type for Person, and auxiliary record types for FullName and FormalTitleName (i.e. Professor Sussman).
+
+\begin{verbatim}
+(define (first-name? x) (printable-string? x))
+(define (last-name? x) (printable-string? x))
+(define (formal-title? x) (printable-string? x))
+(define (person:age? x) (number? x))
+
+(define-record-type Person
+  (make-person first-name last-name age)
+  person?
+  (first-name person:first-name) ; first-name?
+  (last-name person:last-name) ; last-name?
+  (age person:age)) ; person:age?
+
+(define-record-type FullName
+  (make-full-name first-name last-name)
+  full-name?
+  (first-name full-name:first-name) ; first-name?
+  (last-name full-name:last-name)) ; last-name?
+
+(define-record-type FormalTitleName
+  (make-formal-title-name formal-title last-name)
+  formal-title-name?
+  (formal-title formal-title-name:formal-title) ; formal-title?
+  (last-name formal-title-name:last-name)) ; last-name?
+
+;; ... boilerplate registering predicates for each of the above record types ...
+;; (In a production-ready version of our systems, we would have a macro that automatically
+;; registers these predicates for record types without requiring any effort from the user
+;; other than specifying predicate names for each field as we did in comments above.)
+
+(register-type-transform! full-name? formal-title-name? 
+  (lambda (fn)
+    (make-formal-title-name 
+      (if (is-female-first-name? (full-name:first-name fn)) "Mrs." "Mr.")
+      (full-name:last-name fn))))
+
+(register-type-transform! 
+  formal-title-name?
+  printable-string? 
+  (lambda (ftn) 
+    (string-append 
+     (formal-title-name:formal-title ftn) 
+     " "
+     (formal-title-name:last-name ftn))) )
+\end{verbatim}
+
+Now that we've defined our record types, we can automatically begin to search for transformations between them. For example, we can request a transformation from person? to full-name?.
+
+\begin{verbatim}
+(define gs (make-person "Gerald" "Sussman" 18))
+(debug-get-transformations-values person? full-name? gs)
+;; One path gets returned, and the following code snippet is automatically generated.
+;; Note that this transformation involves automatically identifying that the first-name? 
+;; and last-name? can be separately read out of the input and composed into 
+;; (first-name?, last-name?) which can then be transformed into a full-name?
+;; (define (person?-to-full-name? input)
+;;  (make-full-name (person:first-name input) (person:last-name input)))
+\end{verbatim}
+
+For a more complicated example, we can automatically search for ways to print out a person:
+
+\begin{verbatim}
+(define gs (make-person "Gerald" "Sussman" 18))
+(debug-get-transformations-values person? full-name? gs)
+;; Multiple possible transformations are found, resulting in the following values:
+;; "Gerald Sussman", "Mr. Sussman", "Sussman", and "Gerald".
+;; For example, the following code-snippet is generated to create "Mr. Sussman": 
+;;(define (person?-to-printable-string? input)
+;;  (print-formal-title-name 
+;;      (make-formal-title-name 
+;;        (first-name-to-formal-title (person:first-name input)) 
+;;        (person:last-name input))))
+
+\end{verbatim}
+
+\subsection{Compound Predicates}
+
+As a simple but illustrative example of compound predicates, imagine trying to convert (number?, string?) to (number?, number?). We presumably already have the following type conversion defined at a system level:
+
+\begin{verbatim}
+(register-type-transform! string? number? string->number)
+\end{verbatim}
+
+Then, running the search automatically generates code for us:
+\begin{verbatim}
+(debug-get-transformations-values (list number? string?) (list number? number?) (list 1 "2"))
+;;(define (n:number?n:string?-to-n:number?n:number? input)
+;;  (map 
+;;    (lambda (f in) (f in))
+;;    (list number->string identity) 
+;;    input))
+\end{verbatim}
 
 \section{Discussion}
 
