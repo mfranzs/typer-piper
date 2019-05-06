@@ -48,7 +48,8 @@
 (register-type-transform-f!
            length-list?
      (lambda (input_type) 
-	     (generate-list-predicate (* 2 (get-list-predicate-length input_type))))
+	     (generate-list-predicate
+        (* 2 (get-list-predicate-length input_type))))
 	   duplicate-items-in-list)
 
 (define list-len-2? (generate-list-predicate 2))

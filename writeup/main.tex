@@ -1,9 +1,19 @@
 \documentclass[letterpaper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1.25in]{geometry}
-\usepackage{parskip, tikz, amsmath, hyperref}
+\usepackage{parskip, tikz, amsmath, hyperref, listings, pgffor, courier, color}
 \usetikzlibrary{arrows.meta}
 
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{
+  basicstyle=\small\ttfamily,
+  commentstyle=\color{mygreen},
+  keywordstyle=\color{blue},
+  stringstyle=\color{mymauve}
+}
 
 \title{Automating Data Structure Transformations Through Type Chaining}
 
@@ -244,5 +254,26 @@ All of our code (including the \LaTeX\, source for this writeup) can be found at
 \begin{center}
   \url{https://github.com/mfranzs/6905-final-project}
 \end{center}
+
+We also provide a hard copy in the following pages.
+
+\section{Source Code}
+
+\newcommand*{\sourcefiles}{
+    main,
+    example-basic,
+    example-compound-types,
+    example-list-types,
+    example-record-types,
+    helpers,
+    load,
+    memoize%
+}
+
+\foreach \c in \sourcefiles {
+  \subsection{\c.scm}
+  \lstinputlisting[language=lisp]{../\c.scm}
+}
+
 
 \end{document}
