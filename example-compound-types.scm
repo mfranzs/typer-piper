@@ -17,7 +17,8 @@
 ;; Example 1
 ;; ===================
 
-; (debug-get-transformations-values (list number? string?) (list string? string?) (list 1 "2"))
+; (debug-get-transformations-values (list number? string?)
+; 	(list string? string?) (list 1 "2"))
 
 ;; ===================
 ;; Example of a transformation whose input is a compound predicate

@@ -10,13 +10,6 @@
 (register-super! string? printable-string?)
 
 ;; ===================
-;; Predicates for record types
-;; ===================
-
-;(defined-typed-record-type
- ; 'person '(first-name? last-name? age?))(st
-
-;; ===================
 ;; Example: Printing a person
 ;; ===================
 
@@ -57,7 +50,8 @@
 
 (register-type-transform! full-name? first-name? full-name:first-name)
 (register-type-transform! full-name? last-name? full-name:last-name)
-(register-type-transform! (list first-name? last-name?) full-name? make-full-name)
+(register-type-transform! (list first-name? last-name?)
+                          full-name? make-full-name)
 (register-type-transform! 
   full-name?
    printable-string? 
@@ -77,8 +71,12 @@
 (register-predicate! formal-title-name?)
 (register-predicate! formal-title?)
 
-(register-type-transform! formal-title-name? formal-title? formal-title-name:formal-title)
-(register-type-transform! formal-title-name? last-name? formal-title-name:last-name)
+(register-type-transform! formal-title-name?
+                          formal-title?
+                          formal-title-name:formal-title)
+(register-type-transform! formal-title-name?
+                          last-name?
+                          formal-title-name:last-name)
 (register-type-transform! full-name? formal-title-name? 
   (lambda (fn)
     (make-formal-title-name "Mr." (full-name:last-name fn))))
