@@ -28,6 +28,7 @@
   (age person:age))
 
 (register-predicate! person?)
+
 (register-predicate! first-name?)
 (register-super! first-name? printable-string?)
 (register-predicate! last-name?)
@@ -108,179 +109,189 @@
 (define fullname (make-full-name "Gerald" "Sussman"))
 
 (debug-get-transformations-values person? first-name? gs)
-; "Found 1 paths: "
-; "------"
-; "Output value:"
-; "Gerald"
-; "Transforms:"
-; (person:first-name)
-; "Code Gen:"
-; (define (person?-to-first-name? input)
-;   (person:first-name input))
-; "Predicates:"
-; (first-name?)
-; "Values:"
-; (#[person 12] . "Gerald")
-
+;; "Found 1 paths: "
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-first-name? input)
+;;   (person:first-name input))
+;; "Output value:"
+;; "Gerald"
+;; "Transforms:"
+;; (person:first-name)
+;; "Predicates:"
+;; (first-name?)
+;; "Values:"
+;; (#[person 12] . "Gerald")
+;; ""
 
 (debug-get-transformations-values person? full-name? gs)
-; "Found 1 paths: "
-; "------"
-; "Output value:"
-; #[fullname 13]
-; "Transforms:"
-; (((person:first-name) (person:last-name)) (make-full-name))
-; "Code Gen:"
-; (define (person?-to-full-name? input)
-;   (make-full-name (person:first-name input) (person:last-name input)))
-; "Predicates:"
-; (((first-name?) (last-name?)) (full-name?))
-; "Values:"
-; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") . #[fullname 14]))
+;; "Found 2 paths: "
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-full-name? input)
+;;   (make-full-name (person:first-name input) (formal-title-name:last-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (person:last-name input)))))
+;; "Output value:"
+;; #[fullname 13]
+;; "Transforms:"
+;; (((person:first-name) (((person:first-name first-name-to-formal-title) (person:last-name)) (make-formal-title-name formal-title-name:last-name))) (make-full-name))
+;; "Predicates:"
+;; (((first-name?) (((first-name? formal-title?) (last-name?)) (formal-title-name? last-name?))) (full-name?))
+;; "Values:"
+;; (((#[person 12] . "Gerald") (((#[person 12] "Gerald" . "Mr.") (#[person 12] . "Sussman")) (("Mr." "Sussman") #[formaltitlename 15] . "Sussman"))) (("Gerald" "Sussman") . #[fullname 14]))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-full-name? input)
+;;   (make-full-name (person:first-name input) (person:last-name input)))
+;; "Output value:"
+;; #[fullname 16]
+;; "Transforms:"
+;; (((person:first-name) (person:last-name)) (make-full-name))
+;; "Predicates:"
+;; (((first-name?) (last-name?)) (full-name?))
+;; "Values:"
+;; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") . #[fullname 17]))
+;; ""
+
 
 (debug-get-transformations-values person? printable-string? gs)
-; "Found 11 paths: "
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (person:last-name input))
-; "Output value:"
-; "Sussman"
-; "Transforms:"
-; (person:last-name)
-; "Predicates:"
-; (last-name?)
-; "Values:"
-; (#[person 12] . "Sussman")
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (person:first-name input))
-; "Output value:"
-; "Gerald"
-; "Transforms:"
-; (person:first-name)
-; "Predicates:"
-; (first-name?)
-; "Values:"
-; (#[person 12] . "Gerald")
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (print-formal-title-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (person:last-name input))))
-; "Output value:"
-; "Mr. Sussman"
-; "Transforms:"
-; (((person:first-name first-name-to-formal-title) (person:last-name)) (make-formal-title-name print-formal-title-name))
-; "Predicates:"
-; (((first-name? formal-title?) (last-name?)) (formal-title-name? printable-string?))
-; "Values:"
-; (((#[person 12] "Gerald" . "Mr.") (#[person 12] . "Sussman")) (("Mr." "Sussman") #[formaltitlename 13] . "Mr. Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (formal-title-name:last-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (person:last-name input))))
-; "Output value:"
-; "Sussman"
-; "Transforms:"
-; (((person:first-name first-name-to-formal-title) (person:last-name)) (make-formal-title-name formal-title-name:last-name))
-; "Predicates:"
-; (((first-name? formal-title?) (last-name?)) (formal-title-name? last-name?))
-; "Values:"
-; (((#[person 12] "Gerald" . "Mr.") (#[person 12] . "Sussman")) (("Mr." "Sussman") #[formaltitlename 14] . "Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (print-full-name (make-full-name (person:first-name input) (formal-title-name:last-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (person:last-name input))))))
-; "Output value:"
-; "Gerald Sussman"
-; "Transforms:"
-; (((person:first-name) (((person:first-name first-name-to-formal-title) (person:last-name)) (make-formal-title-name formal-title-name:last-name))) (make-full-name print-full-name))
-; "Predicates:"
-; (((first-name?) (((first-name? formal-title?) (last-name?)) (formal-title-name? last-name?))) (full-name? printable-string?))
-; "Values:"
-; (((#[person 12] . "Gerald") (((#[person 12] "Gerald" . "Mr.") (#[person 12] . "Sussman")) (("Mr." "Sussman") #[formaltitlename 16] . "Sussman")))
-;  (("Gerald" "Sussman") #[fullname 15] . "Gerald Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (print-formal-title-name
-;    (make-formal-title-name (map (lambda (f in) (f in)) (list missing-name-in-get-name-lookup missing-name-in-get-name-lookup) (list (person:first-name input) (person:last-name input))))))
-; "Output value:"
-; "Mr. Sussman"
-; "Transforms:"
-; (((person:first-name) (person:last-name)) (missing-name-in-get-name-lookup make-formal-title-name print-formal-title-name))
-; "Predicates:"
-; (((first-name?) (last-name?)) ((formal-title? always-true) formal-title-name? printable-string?))
-; "Values:"
-; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") ("Mr." "Sussman") #[formaltitlename 17] . "Mr. Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (formal-title-name:last-name
-;    (make-formal-title-name (map (lambda (f in) (f in)) (list missing-name-in-get-name-lookup missing-name-in-get-name-lookup) (list (person:first-name input) (person:last-name input))))))
-; "Output value:"
-; "Sussman"
-; "Transforms:"
-; (((person:first-name) (person:last-name)) (missing-name-in-get-name-lookup make-formal-title-name formal-title-name:last-name))
-; "Predicates:"
-; (((first-name?) (last-name?)) ((formal-title? always-true) formal-title-name? last-name?))
-; "Values:"
-; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") ("Mr." "Sussman") #[formaltitlename 18] . "Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (print-full-name (make-full-name (person:first-name input) (person:last-name input))))
-; "Output value:"
-; "Gerald Sussman"
-; "Transforms:"
-; (((person:first-name) (person:last-name)) (make-full-name print-full-name))
-; "Predicates:"
-; (((first-name?) (last-name?)) (full-name? printable-string?))
-; "Values:"
-; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 19] . "Gerald Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (full-name:last-name (make-full-name (person:first-name input) (person:last-name input))))
-; "Output value:"
-; "Sussman"
-; "Transforms:"
-; (((person:first-name) (person:last-name)) (make-full-name full-name:last-name))
-; "Predicates:"
-; (((first-name?) (last-name?)) (full-name? last-name?))
-; "Values:"
-; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 20] . "Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (print-formal-title-name
-;    (make-formal-title-name
-;     (formal-title-name:formal-title
-;      (make-formal-title-name (map (lambda (f in) (f in)) (list missing-name-in-get-name-lookup missing-name-in-get-name-lookup) (list (person:first-name input) (person:last-name input)))))
-;     (full-name:last-name (make-full-name (person:first-name input) (person:last-name input))))))
-; "Output value:"
-; "Mr. Sussman"
-; "Transforms:"
-; (((((person:first-name) (person:last-name)) (missing-name-in-get-name-lookup make-formal-title-name formal-title-name:formal-title))
-;   (((person:first-name) (person:last-name)) (make-full-name full-name:last-name)))
-;  (make-formal-title-name print-formal-title-name))
-; "Predicates:"
-; (((((first-name?) (last-name?)) ((formal-title? always-true) formal-title-name? formal-title?)) (((first-name?) (last-name?)) (full-name? last-name?))) (formal-title-name? printable-string?))
-; "Values:"
-; (((((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") ("Mr." "Sussman") #[formaltitlename 23] . "Mr."))
-;   (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 22] . "Sussman")))
-;  (("Mr." "Sussman") #[formaltitlename 21] . "Mr. Sussman"))
-; "------"
-; "Code Gen:"
-; (define (person?-to-printable-string? input)
-;   (print-formal-title-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (full-name:last-name (make-full-name (person:first-name input) (person:last-name input))))))
-; "Output value:"
-; "Mr. Sussman"
-; "Transforms:"
-; (((person:first-name first-name-to-formal-title) (((person:first-name) (person:last-name)) (make-full-name full-name:last-name))) (make-formal-title-name print-formal-title-name))
-; "Predicates:"
-; (((first-name? formal-title?) (((first-name?) (last-name?)) (full-name? last-name?))) (formal-title-name? printable-string?))
-; "Values:"
-; (((#[person 12] "Gerald" . "Mr.") (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 25] . "Sussman"))) (("Mr." "Sussman") #[formaltitlename 24] . "Mr. Sussman"))
-
+;; ""
+;; "Found 11 paths: "
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (person:last-name input))
+;; "Output value:"
+;; "Sussman"
+;; "Transforms:"
+;; (person:last-name)
+;; "Predicates:"
+;; (last-name?)
+;; "Values:"
+;; (#[person 12] . "Sussman")
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (person:first-name input))
+;; "Output value:"
+;; "Gerald"
+;; "Transforms:"
+;; (person:first-name)
+;; "Predicates:"
+;; (first-name?)
+;; "Values:"
+;; (#[person 12] . "Gerald")
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (print-formal-title-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (person:last-name input))))
+;; "Output value:"
+;; "Mr. Sussman"
+;; "Transforms:"
+;; (((person:first-name first-name-to-formal-title) (person:last-name)) (make-formal-title-name print-formal-title-name))
+;; "Predicates:"
+;; (((first-name? formal-title?) (last-name?)) (formal-title-name? printable-string?))
+;; "Values:"
+;; (((#[person 12] "Gerald" . "Mr.") (#[person 12] . "Sussman")) (("Mr." "Sussman") #[formaltitlename 18] . "Mr. Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (formal-title-name:last-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (person:last-name input))))
+;; "Output value:"
+;; "Sussman"
+;; "Transforms:"
+;; (((person:first-name first-name-to-formal-title) (person:last-name)) (make-formal-title-name formal-title-name:last-name))
+;; "Predicates:"
+;; (((first-name? formal-title?) (last-name?)) (formal-title-name? last-name?))
+;; "Values:"
+;; (((#[person 12] "Gerald" . "Mr.") (#[person 12] . "Sussman")) (("Mr." "Sussman") #[formaltitlename 19] . "Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (print-full-name (make-full-name (person:first-name input) (formal-title-name:last-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (person:last-name input))))))
+;; "Output value:"
+;; "Gerald Sussman"
+;; "Transforms:"
+;; (((person:first-name) (((person:first-name first-name-to-formal-title) (person:last-name)) (make-formal-title-name formal-title-name:last-name))) (make-full-name print-full-name))
+;; "Predicates:"
+;; (((first-name?) (((first-name? formal-title?) (last-name?)) (formal-title-name? last-name?))) (full-name? printable-string?))
+;; "Values:"
+;; (((#[person 12] . "Gerald") (((#[person 12] "Gerald" . "Mr.") (#[person 12] . "Sussman")) (("Mr." "Sussman") #[formaltitlename 21] . "Sussman")))
+;;  (("Gerald" "Sussman") #[fullname 20] . "Gerald Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (print-formal-title-name (make-formal-title-name (map call (list first-name-to-formal-title identity) (list (person:first-name input) (person:last-name input))))))
+;; "Output value:"
+;; "Mr. Sussman"
+;; "Transforms:"
+;; (((person:first-name) (person:last-name)) (missing-name-in-get-name-lookup make-formal-title-name print-formal-title-name))
+;; "Predicates:"
+;; (((first-name?) (last-name?)) (formal-title?always-true formal-title-name? printable-string?))
+;; "Values:"
+;; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") ("Mr." "Sussman") #[formaltitlename 22] . "Mr. Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (formal-title-name:last-name (make-formal-title-name (map call (list first-name-to-formal-title identity) (list (person:first-name input) (person:last-name input))))))
+;; "Output value:"
+;; "Sussman"
+;; "Transforms:"
+;; (((person:first-name) (person:last-name)) (missing-name-in-get-name-lookup make-formal-title-name formal-title-name:last-name))
+;; "Predicates:"
+;; (((first-name?) (last-name?)) (formal-title?always-true formal-title-name? last-name?))
+;; "Values:"
+;; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") ("Mr." "Sussman") #[formaltitlename 23] . "Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (print-full-name (make-full-name (person:first-name input) (person:last-name input))))
+;; "Output value:"
+;; "Gerald Sussman"
+;; "Transforms:"
+;; (((person:first-name) (person:last-name)) (make-full-name print-full-name))
+;; "Predicates:"
+;; (((first-name?) (last-name?)) (full-name? printable-string?))
+;; "Values:"
+;; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 24] . "Gerald Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (full-name:last-name (make-full-name (person:first-name input) (person:last-name input))))
+;; "Output value:"
+;; "Sussman"
+;; "Transforms:"
+;; (((person:first-name) (person:last-name)) (make-full-name full-name:last-name))
+;; "Predicates:"
+;; (((first-name?) (last-name?)) (full-name? last-name?))
+;; "Values:"
+;; (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 25] . "Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (print-formal-title-name
+;;    (make-formal-title-name (formal-title-name:formal-title (make-formal-title-name (map call (list first-name-to-formal-title identity) (list (person:first-name input) (person:last-name input)))))
+;;                            (full-name:last-name (make-full-name (person:first-name input) (person:last-name input))))))
+;; "Output value:"
+;; "Mr. Sussman"
+;; "Transforms:"
+;; (((((person:first-name) (person:last-name)) (missing-name-in-get-name-lookup make-formal-title-name formal-title-name:formal-title))
+;;   (((person:first-name) (person:last-name)) (make-full-name full-name:last-name)))
+;;  (make-formal-title-name print-formal-title-name))
+;; "Predicates:"
+;; (((((first-name?) (last-name?)) (formal-title?always-true formal-title-name? formal-title?)) (((first-name?) (last-name?)) (full-name? last-name?))) (formal-title-name? printable-string?))
+;; "Values:"
+;; (((((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") ("Mr." "Sussman") #[formaltitlename 28] . "Mr."))
+;;   (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 27] . "Sussman")))
+;;  (("Mr." "Sussman") #[formaltitlename 26] . "Mr. Sussman"))
+;; "------"
+;; "Code Gen:"
+;; (define (person?-to-printable-string? input)
+;;   (print-formal-title-name (make-formal-title-name (first-name-to-formal-title (person:first-name input)) (full-name:last-name (make-full-name (person:first-name input) (person:last-name input))))))
+;; "Output value:"
+;; "Mr. Sussman"
+;; "Transforms:"
+;; (((person:first-name first-name-to-formal-title) (((person:first-name) (person:last-name)) (make-full-name full-name:last-name))) (make-formal-title-name print-formal-title-name))
+;; "Predicates:"
+;; (((first-name? formal-title?) (((first-name?) (last-name?)) (full-name? last-name?))) (formal-title-name? printable-string?))
+;; "Values:"
+;; (((#[person 12] "Gerald" . "Mr.") (((#[person 12] . "Gerald") (#[person 12] . "Sussman")) (("Gerald" "Sussman") #[fullname 30] . "Sussman"))) (("Mr." "Sussman") #[formaltitlename 29] . "Mr. Sussman"))

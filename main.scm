@@ -244,12 +244,12 @@
 	       (is-compound-transform? transform))
 	  (list
 	   'map
-	   (quote (lambda (f in) (f in)))
+	   'call
 	   (cons
 	    'list
 	    (map
 	     (lambda (sub-transform)
-	      (get-name (transformation-data-transform transform)))
+	      (get-name (transformation-data-transform sub-transform)))
 	     transform))
 	   (cons
 	    'list
@@ -267,12 +267,12 @@
 	 ((is-compound-transform? transform)
 	  (list
 	   'map
-	   (quote (lambda (f in) (f in)))
+	   'call
 	   (cons
 	    'list
 	    (map
 	     (lambda (sub-transform)
-	      (get-name (transformation-data-transform transform)))
+	      (get-name (transformation-data-transform sub-transform)))
 	     transform))
 	   (codegen-path-inner (cdr path))))
 	 (else
