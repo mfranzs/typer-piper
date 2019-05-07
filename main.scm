@@ -63,7 +63,9 @@
                            transformation))
 
 (define (pred-to-string predicate)
-  (symbol->string (get-name predicate)))
+  (if (list? predicate)
+      (apply string-append (map pred-to-string predicate))
+      (symbol->string (get-name predicate))))
 
 (define (all-predicates)
   ((%transform-graph 'get-keys)))
@@ -131,10 +133,12 @@
   (equal? (car transform) 'joiner))
 
 (define (is-compound-transform? transform)
-  (list? transform))
+  (and (not (is-joiner-transform? transform)) (list? transform)))
 
 (define (transformation-input-predicate transformation)
-  (car transformation))
+  (if (is-compound-transform? transformation)
+      (map transformation-input-predicate transformation)
+      (car transformation)))
 
 ;; Returns a function that transforms the input-predicate to the output
 (define (transformation-predicate-transform transformation)
@@ -143,6 +147,8 @@
       ((is-joiner-transform? transformation)
        (joiner-transform-output-predicate transformation))
       ((is-compound-transform? transformation)
+       (assert (list? in) in)
+       (assert (= (length in) (length transformation)))
        (map
          (lambda (value transform)
            ((transformation-predicate-transform transform) value)) 
@@ -162,7 +168,7 @@
            ((create-compound-transformation path) in))
          (joiner-transform-paths-list transformation))))
     ((is-compound-transform? transformation)
-     (lambda (in) 
+     (lambda in
        (map 
          (lambda (value transform)
            ((transformation-data-transform transform) value)) 
@@ -212,7 +218,7 @@
               (transform-rest-of-path
                 (map
                   (lambda (joiner-sub-path)
-                    ((create-compound-transformation joiner-sub-path) in))
+                    ((create-compound-transformation (reverse joiner-sub-path)) in))
                   (joiner-transform-paths-list transform))))
             (lambda (in)
               (transform-rest-of-path
@@ -233,17 +239,46 @@
   (if (null? path)
       'input
       (let ((transform (car path)))
-        (if (and (> (length path) 1) (is-joiner-transform? (cadr path)))
-            (cons
-              (get-name (transformation-data-transform transform))
-              (map
-                (lambda (joiner-sub-path)
-                  (codegen-path-inner (reverse joiner-sub-path)))
-                (joiner-transform-paths-list (cadr path))))
-            (list
-              (get-name (transformation-data-transform transform))
-              (codegen-path-inner (cdr path)))
-            ))))
+        (cond
+        ((is-compound-transform? transform)
+          ;; If it's a compound transform, we need to separately apply
+          ;; each sub-transform.
+          (list
+          'map
+          'call
+          (cons
+            'list
+            (map
+            (lambda (sub-transform)
+              (get-name (transformation-data-transform sub-transform)))
+            transform))
+          (codegen-path-inner (cdr path))))
+        ((and (> (length path) 1) (is-joiner-transform? (cadr path)))
+          ;; If our next thing is a joiner transform, we want to take the output of that transform
+          ;; and directly use them as the arguments to this function. 
+          ;; NOTE: We know this transform doesn't take a compound transform as input.
+          (cons
+            (get-name (transformation-data-transform transform))
+            (map
+              (lambda (joiner-sub-path)
+                (codegen-path-inner joiner-sub-path))
+              (joiner-transform-paths-list (cadr path)))))
+        ((is-joiner-transform? transform)
+          ;; If it's a joiner transform, we want to separately compute the output
+          ;; of each subpath. Note that we only get here if we have a path o nothing but a 
+          ;; joiner trahsform, so we just want to output the answer as a list.
+          (cons
+            'list
+            (map
+              (lambda (joiner-sub-path)
+                (codegen-path-inner joiner-sub-path))
+              (joiner-transform-paths-list transform))))
+        (else
+          ;; If it's a normal transform, we just apply the transform function.
+          (list
+            (get-name (transformation-data-transform transform))
+            (codegen-path-inner (cdr path)))
+            )))))
 
 (define (create-compound-transformation-debugger-transforms path)
   (if (null? path)
@@ -257,12 +292,12 @@
                 (map
                   (lambda (joiner-sub-path)
                     ((create-compound-transformation-debugger-transforms
-                       joiner-sub-path) in))
+                      (reverse joiner-sub-path)) in))
                   (joiner-transform-paths-list transform))
                 (transform-rest-of-path
                   (map
                     (lambda (joiner-sub-path)
-                      ((create-compound-transformation joiner-sub-path) in))
+                      ((create-compound-transformation (reverse joiner-sub-path)) in))
                     (joiner-transform-paths-list transform)))))
             (lambda (in)
               (cons
@@ -283,12 +318,12 @@
                 (map
                   (lambda (joiner-sub-path)
                     ((create-compound-transformation-debugger-predicates
-                       joiner-sub-path) in))
+                      (reverse joiner-sub-path)) in))
                   (joiner-transform-paths-list transform))
                 (transform-rest-of-path
                   (map
                     (lambda (joiner-sub-path)
-                      ((create-compound-transformation joiner-sub-path) in))
+                      ((create-compound-transformation (reverse joiner-sub-path)) in))
                     (joiner-transform-paths-list transform)))))
             (lambda (in)
               (cons
@@ -310,12 +345,12 @@
                 (map
                   (lambda (joiner-sub-path)
                     ((create-compound-transformation-debugger-values
-                       joiner-sub-path) in))
+                       (reverse joiner-sub-path)) in))
                   (joiner-transform-paths-list transform))
                 (transform-rest-of-path
                   (map
                     (lambda (joiner-sub-path)
-                      ((create-compound-transformation joiner-sub-path) in))
+                      ((create-compound-transformation (reverse joiner-sub-path)) in))
                     (joiner-transform-paths-list transform)))))
             (lambda (in)
               (cons
@@ -487,16 +522,16 @@
 (define (print-path-data path input-predicate output-predicate input-value)
   (write-line "------")
   
+  (write-line "Code Gen:")
+  (pp (codegen-path path input-predicate output-predicate))
+
   (write-line "Output value:")
   (write-line ((create-compound-transformation path) input-value))
   
   (write-line "Transforms:")
   (pp ((create-compound-transformation-debugger-transforms path)
        input-value))
-  
-  (write-line "Code Gen:")
-  (pp (codegen-path path input-predicate output-predicate))
-  
+
   (write-line "Predicates:")
   (pp ((create-compound-transformation-debugger-predicates path) input-value))
   

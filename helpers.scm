@@ -1,4 +1,6 @@
 
+(define (call f x) (f x))
+
 (define (two-crossproduct a b)
   (flatten-one-layer
      (map 
@@ -16,6 +18,16 @@
 (define (flatten-one-layer list-of-lists) (apply append list-of-lists))
 
 (define (get-name f)
+  (if (equal? (get-name-proc f) '|#[unnamed-procedure]|)
+      (get-name-search f)
+      (get-name-proc f)))
+
+(define (get-name-proc f)
+  (if (list? f)
+      (string->symbol (apply string-append (map (compose symbol->string get-name) f)))
+      (car (lambda-components* (procedure-lambda f) list))))
+
+(define (get-name-search f)
   (if (list? f) 
     (map get-name f)
     (let ((matches (filter
@@ -24,6 +36,7 @@
       (if (>= (length matches) 1)
         (car (car matches))
         'missing-name-in-get-name-lookup))))
+
 
 (define write
   (lambda args
