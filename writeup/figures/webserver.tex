@@ -1,0 +1,13 @@
+\begin{tikzpicture}[node distance=2.5cm,auto,>=latex']
+	\tikzstyle{type}=[draw, fill=blue!20, minimum size=2em,minimum height=10em]
+	\tikzstyle{init} = [pin edge={to-,thin,black}]
+
+    \node [type] (a) {Raw packet};
+    \node [type] (c) [right of=a, node distance=5cm] {JSON representation};
+    \node [type] (d) [right of=c, node distance=6cm] {Data structure};
+    \node [type] (e) [right of=d, node distance=5cm] {Commands};
+    
+    \path[->] (a) edge node {\texttt{decode()}} (c);
+    \draw[->] (c) edge node {\texttt{parse\_json()}} (d);
+    \draw[->] (d) edge node {\texttt{logic()}} (e);
+\end{tikzpicture}

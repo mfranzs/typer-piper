@@ -1,8 +1,8 @@
 \documentclass[letterpaper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1.25in]{geometry}
-\usepackage{parskip, tikz, amsmath, hyperref, listings, pgffor, courier, color}
-\usetikzlibrary{arrows.meta}
+\usepackage{parskip, tikz, amsmath, hyperref, listings, pgffor, courier, color, graphicx}
+\usetikzlibrary{arrows.meta, arrows}
 
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
@@ -37,6 +37,17 @@ We propose a system for automating multi-step type transformations in MIT Scheme
 \section{Introduction}
 
 Much of programming involves manipulation and transformation of data into different types.  Internet connected systems serialize HTTP data into some format, then translate to a JSON type and finally to a normal data structure.  An image processing system may convert images from a filename to a JPEG type to a RGB type to a gray-scale image.  A command line program might parse a command line input, to a split list, to a data-structure with \texttt{int}s and \texttt{string}s and \texttt{flag}s, and finally to commands to be executed.
+
+\begin{figure}[h!]
+\centering
+
+\resizebox{14cm}{!} {
+  \input{figures/webserver.tex}
+}
+
+\caption{A type conversion diagram for a webserver.}
+\label{webserver}
+\end{figure}
 
 Languages with type annotations or inference often have the information necessary to infer these flows, but instead force the programmer to explicitly notate the conversion process.  This leads to more code and more thinking, which we believe to be universally worse than less code and less thinking.
 
