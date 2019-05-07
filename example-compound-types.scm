@@ -6,7 +6,7 @@
 (load "main.scm")
 
 ;; ===================
-;; Example 1
+;; Example of applying transformations in parallel on a compound type.
 ;; ===================
 
 (register-predicate! list?)
@@ -18,7 +18,7 @@
 (debug-get-transformations-values (list number? string?) (list number? number?) (list 1 "2"))
 
 ;; ===================
-;; Example of a transformation whose input is a compound predicate
+;; Example of a transformation whose input is a compound predicate.
 ;; ===================
 
 ; (register-predicate! pair?)
@@ -28,18 +28,20 @@
 ; (debug-get-transformations-values (list number? number?) pair? (list 1 1))
 
 ;; ===================
-;; Example of auto-broadcasting to a compound predicate
+;; Example of auto-broadcasting to a compound predicate.
 ;; ===================
 
-; (define (thing? x) (string? x))
+(define (thing? x) (string? x))
 
-; (register-predicate! number?)
-; (register-predicate! thing?)
-; (register-predicate! string?)
-; (register-predicate! pair?)
+(register-predicate! number?)
+(register-predicate! thing?)
+(register-predicate! string?)
+(register-predicate! pair?)
 
-; (register-type-transform! number? string? number->string)
-; (register-type-transform! number? thing? (lambda (n) (number->string (+ 3 n))))
-; (register-type-transform! (list thing? string?) pair? cons)
+(define (add-three n) (number->string (+ 3 n)))
 
-; (debug-get-transformations-values number? (list thing? string?) 1)
+(register-type-transform! number? string? number->string)
+(register-type-transform! number? thing? add-three)
+(register-type-transform! (list thing? string?) pair? cons)
+
+(debug-get-transformations-values number? (list thing? string?) 1)

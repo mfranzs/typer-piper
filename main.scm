@@ -239,47 +239,46 @@
   (if (null? path)
       'input
       (let ((transform (car path)))
-	(cond
-	 ((and (> (length path) 1) (is-joiner-transform? (cadr path))
-	       (is-compound-transform? transform))
-	  (list
-	   'map
-	   'call
-	   (cons
-	    'list
-	    (map
-	     (lambda (sub-transform)
-	      (get-name (transformation-data-transform sub-transform)))
-	     transform))
-	   (cons
-	    'list
-	    (map
-	     (lambda (joiner-sub-path)
-	       (codegen-path-inner joiner-sub-path))
-	     (joiner-transform-paths-list (cadr path))))))
-	 ((and (> (length path) 1) (is-joiner-transform? (cadr path)))
-	  (cons
-	   (get-name (transformation-data-transform transform))
-	   (map
-	    (lambda (joiner-sub-path)
-	      (codegen-path-inner joiner-sub-path))
-	    (joiner-transform-paths-list (cadr path)))))
-	 ((is-compound-transform? transform)
-	  (list
-	   'map
-	   'call
-	   (cons
-	    'list
-	    (map
-	     (lambda (sub-transform)
-	      (get-name (transformation-data-transform sub-transform)))
-	     transform))
-	   (codegen-path-inner (cdr path))))
-	 (else
-	  (list
-	     (get-name (transformation-data-transform transform))
-	     (codegen-path-inner (cdr path)))
-	    )))))
+        (cond
+        ((is-compound-transform? transform)
+          ;; If it's a compound transform, we need to separately apply
+          ;; each sub-transform.
+          (list
+          'map
+          'call
+          (cons
+            'list
+            (map
+            (lambda (sub-transform)
+              (get-name (transformation-data-transform sub-transform)))
+            transform))
+          (codegen-path-inner (cdr path))))
+        ((and (> (length path) 1) (is-joiner-transform? (cadr path)))
+          ;; If our next thing is a joiner transform, we want to take the output of that transform
+          ;; and directly use them as the arguments to this function. 
+          ;; NOTE: We know this transform doesn't take a compound transform as input.
+          (cons
+            (get-name (transformation-data-transform transform))
+            (map
+              (lambda (joiner-sub-path)
+                (codegen-path-inner joiner-sub-path))
+              (joiner-transform-paths-list (cadr path)))))
+        ((is-joiner-transform? transform)
+          ;; If it's a joiner transform, we want to separately compute the output
+          ;; of each subpath. Note that we only get here if we have a path o nothing but a 
+          ;; joiner trahsform, so we just want to output the answer as a list.
+          (cons
+            'list
+            (map
+              (lambda (joiner-sub-path)
+                (codegen-path-inner joiner-sub-path))
+              (joiner-transform-paths-list transform))))
+        (else
+          ;; If it's a normal transform, we just apply the transform function.
+          (list
+            (get-name (transformation-data-transform transform))
+            (codegen-path-inner (cdr path)))
+            )))))
 
 (define (create-compound-transformation-debugger-transforms path)
   (if (null? path)
