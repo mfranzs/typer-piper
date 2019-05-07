@@ -15,7 +15,7 @@
 
 (register-type-transform! string? number? string->number)
 
-(debug-get-transformations-values (list number? string?) (list number? number?) (list 1 "2"))
+(debug-transform (list number? string?) (list number? number?) (list 1 "2"))
 
 ;; ===================
 ;; Example of a transformation whose input is a compound predicate.
@@ -25,7 +25,7 @@
 
 ; (register-type-transform! (list number? number?) pair? cons)
 
-; (debug-get-transformations-values (list number? number?) pair? (list 1 1))
+; (debug-transform (list number? number?) pair? (list 1 1))
 
 ;; ===================
 ;; Example of auto-broadcasting to a compound predicate.
@@ -44,4 +44,4 @@
 (register-type-transform! number? thing? add-three)
 (register-type-transform! (list thing? string?) pair? cons)
 
-(debug-get-transformations-values number? (list thing? string?) 1)
+(debug-transform number? (list thing? string?) 1)

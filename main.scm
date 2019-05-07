@@ -177,6 +177,7 @@
     (else
       (cddr transformation))))
 
+;; Applies this transformation to the given in-value.
 (define (apply-transformation-data-transform transformation in-value)
   (let ((dt-fn (transformation-data-transform transformation)))
     (if (list? (transformation-input-predicate transformation))
@@ -225,7 +226,7 @@
                 (apply-transformation-data-transform
                   transform in)))))))
 
-(define (codegen-path path input-predicate output-predicate)
+(define (codegen path input-predicate output-predicate)
   (list
     'define
     (list (string->symbol (string-append
@@ -233,9 +234,9 @@
                             "-to-"
                             (pred-to-string output-predicate)))
           'input)
-    (codegen-path-inner (reverse path))))
+    (codegen-inner (reverse path))))
 
-(define (codegen-path-inner path)
+(define (codegen-inner path)
   (if (null? path)
       'input
       (let ((transform (car path)))
@@ -252,7 +253,7 @@
             (lambda (sub-transform)
               (get-name (transformation-data-transform sub-transform)))
             transform))
-          (codegen-path-inner (cdr path))))
+          (codegen-inner (cdr path))))
         ((and (> (length path) 1) (is-joiner-transform? (cadr path)))
           ;; If our next thing is a joiner transform, we want to take the output of that transform
           ;; and directly use them as the arguments to this function. 
@@ -261,7 +262,7 @@
             (get-name (transformation-data-transform transform))
             (map
               (lambda (joiner-sub-path)
-                (codegen-path-inner joiner-sub-path))
+                (codegen-inner joiner-sub-path))
               (joiner-transform-paths-list (cadr path)))))
         ((is-joiner-transform? transform)
           ;; If it's a joiner transform, we want to separately compute the output
@@ -271,27 +272,28 @@
             'list
             (map
               (lambda (joiner-sub-path)
-                (codegen-path-inner joiner-sub-path))
+                (codegen-inner joiner-sub-path))
               (joiner-transform-paths-list transform))))
         (else
           ;; If it's a normal transform, we just apply the transform function.
           (list
             (get-name (transformation-data-transform transform))
-            (codegen-path-inner (cdr path)))
+            (codegen-inner (cdr path)))
             )))))
 
-(define (create-compound-transformation-debugger-transforms path)
+;; Visualizes the transforms involved in the path
+(define (visualize-transformation-transforms path)
   (if (null? path)
       (lambda (x) '())
       (let ((transform-rest-of-path
-              (create-compound-transformation-debugger-transforms (cdr path)))
+              (visualize-transformation-transforms (cdr path)))
             (transform (car path)))
         (if (is-joiner-transform? transform)
             (lambda (in)
               (list 
                 (map
                   (lambda (joiner-sub-path)
-                    ((create-compound-transformation-debugger-transforms
+                    ((visualize-transformation-transforms
                       (reverse joiner-sub-path)) in))
                   (joiner-transform-paths-list transform))
                 (transform-rest-of-path
@@ -306,18 +308,19 @@
                   (apply-transformation-data-transform
                     transform in))))))))
 
-(define (create-compound-transformation-debugger-predicates path)
+;; Visualizes the intermediate predicates we reach in the path 
+(define (visualize-transformation-predicates path)
   (if (null? path)
       (lambda (x) '())
       (let ((transform-rest-of-path
-              (create-compound-transformation-debugger-predicates (cdr path)))
+              (visualize-transformation-predicates (cdr path)))
             (transform (car path)))
         (if (is-joiner-transform? transform)
             (lambda (in)
               (list 
                 (map
                   (lambda (joiner-sub-path)
-                    ((create-compound-transformation-debugger-predicates
+                    ((visualize-transformation-predicates
                       (reverse joiner-sub-path)) in))
                   (joiner-transform-paths-list transform))
                 (transform-rest-of-path
@@ -333,18 +336,19 @@
                   (apply-transformation-data-transform
                     transform in))))))))
 
-(define (create-compound-transformation-debugger-values path)
+;; Visualizes the intermediate values we reach while performing a transformation along the path
+(define (visualize-transformation-values path)
   (if (null? path)
       identity
       (let ((transform-rest-of-path
-              (create-compound-transformation-debugger-values (cdr path)))
+              (visualize-transformation-values (cdr path)))
             (transform (car path)))
         (if (is-joiner-transform? transform)
             (lambda (in)
               (list 
                 (map
                   (lambda (joiner-sub-path)
-                    ((create-compound-transformation-debugger-values
+                    ((visualize-transformation-values
                        (reverse joiner-sub-path)) in))
                   (joiner-transform-paths-list transform))
                 (transform-rest-of-path
@@ -378,10 +382,10 @@
                                                      (list))))
       input-predicate)))
 
+;; Find compound-predicates that we can make by using our
+;; input-predicate at least once and filling the rest of the slots
+;; with things from reached-predicates
 (define (all-valid-compound-predicates input-predicate reached-predicates)
-  ;; Find compound-predicates that we can make by using our
-  ;; input-predicate at least once and filling the rest of the slots
-  ;; with things from reached-predicates
   (filter
     (lambda (compound-predicate)
       (and (member input-predicate compound-predicate)
@@ -392,6 +396,9 @@
              compound-predicate)))
     (all-compound-predicates)))
 
+;; Find all compound predicates we could make using a our input-predicate and filling
+;; the compound-predicates other slots from things in reached-predicates,
+;; then generate transforms for each of those compound predicates.
 (define (all-joiner-transforms input-predicate reached-predicates
                                path-so-far)
   (flatten-one-layer
@@ -423,6 +430,7 @@
     (flatten-one-layer (map get-predicate-transforms
                             (get-predicate-supers input-predicate)))))
 
+;; Computes all output predicates for these transforms.
 (define (apply-all-transforms-to-predicate input-predicate transforms)
   (map
     (lambda (transform)
@@ -502,7 +510,7 @@
 ;; Visualizing Transformations
 ;; ==============
 
-(define (debug-get-transformations-values input-predicate
+(define (debug-transform input-predicate
                                           output-predicate
                                           input-value)
   (write-line "")
@@ -513,30 +521,30 @@
   (let ((paths (get-transformations input-predicate output-predicate)))
     (write "Found" (length paths) "paths:")
     (for-each (lambda (path)
-                (print-path-data
+                (visualize-path
                   path
                   input-predicate
                   output-predicate
                   input-value)) paths)))
 
-(define (print-path-data path input-predicate output-predicate input-value)
+(define (visualize-path path input-predicate output-predicate input-value)
   (write-line "------")
   
   (write-line "Code Gen:")
-  (pp (codegen-path path input-predicate output-predicate))
+  (pp (codegen path input-predicate output-predicate))
 
   (write-line "Output value:")
   (write-line ((create-compound-transformation path) input-value))
   
   (write-line "Transforms:")
-  (pp ((create-compound-transformation-debugger-transforms path)
+  (pp ((visualize-transformation-transforms path)
        input-value))
 
   (write-line "Predicates:")
-  (pp ((create-compound-transformation-debugger-predicates path) input-value))
+  (pp ((visualize-transformation-predicates path) input-value))
   
   (write-line "Values:")
-  (pp ((create-compound-transformation-debugger-values path) input-value)))
+  (pp ((visualize-transformation-values path) input-value)))
 
 
 (define (transform-with-first-path input-predicate output-predicate input-value)
@@ -563,7 +571,7 @@
     (for-each 
       (lambda (paths input-predicate)
         (for-each
-          (lambda (path) (print-path-data
+          (lambda (path) (visualize-path
                            path
                            input-predicate
                            output-predicate
