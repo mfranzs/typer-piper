@@ -42,7 +42,7 @@
 
 (define (duplicate-items-in-list lst)
   (apply append (list lst lst)))
-  
+
 (register-type-transform-f!
            length-list?
      (lambda (input_type) 
@@ -53,7 +53,7 @@
 (define list-len-2? (generate-list-predicate 2))
 (define list-len-8? (generate-list-predicate 8))
 
-(debug-get-transformations-values
+(debug-transform
  list-len-2?
  list-len-8?
  (list 2 3))
@@ -77,7 +77,7 @@
 ; (define list-len-2? (generate-list-predicate 2))
 ; (define list-len-4? (generate-list-predicate 4))
 
-; (debug-get-transformations-values
+; (debug-transform
 ;  list-len-2?
 ;  list-len-4?
 ;  (list 2 3))

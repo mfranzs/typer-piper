@@ -108,7 +108,7 @@
 (define gs (make-person "Gerald" "Sussman" 18))
 (define fullname (make-full-name "Gerald" "Sussman"))
 
-(debug-get-transformations-values person? first-name? gs)
+(debug-transform person? first-name? gs)
 ;; "Found 1 paths: "
 ;; "------"
 ;; "Code Gen:"
@@ -124,7 +124,7 @@
 ;; (#[person 12] . "Gerald")
 ;; ""
 
-(debug-get-transformations-values person? full-name? gs)
+(debug-transform person? full-name? gs)
 ;; "Found 2 paths: "
 ;; "------"
 ;; "Code Gen:"
@@ -153,5 +153,5 @@
 ;; ""
 
 
-(debug-get-transformations-values person? printable-string? gs)
+(debug-transform person? printable-string? gs)
 ;; Outputs values including "Gerald", "Sussman", "Mr. Sussman", and "Gerald Sussman"

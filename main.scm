@@ -510,7 +510,7 @@
 ;; Visualizing Transformations
 ;; ==============
 
-(define (debug-get-transformations-values input-predicate
+(define (debug-transform input-predicate
                                           output-predicate
                                           input-value)
   (write-line "")
@@ -521,13 +521,13 @@
   (let ((paths (get-transformations input-predicate output-predicate)))
     (write "Found" (length paths) "paths:")
     (for-each (lambda (path)
-                (print-path-data
+                (visualize-path
                   path
                   input-predicate
                   output-predicate
                   input-value)) paths)))
 
-(define (print-path-data path input-predicate output-predicate input-value)
+(define (visualize-path path input-predicate output-predicate input-value)
   (write-line "------")
   
   (write-line "Code Gen:")
@@ -571,7 +571,7 @@
     (for-each 
       (lambda (paths input-predicate)
         (for-each
-          (lambda (path) (print-path-data
+          (lambda (path) (visualize-path
                            path
                            input-predicate
                            output-predicate
