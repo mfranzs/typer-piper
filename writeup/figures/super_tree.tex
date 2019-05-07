@@ -1,0 +1,17 @@
+\begin{tikzpicture}
+\begin{scope}[every node/.style={circle,thick,draw}]
+    \node (A) at (0,0) {\texttt{number?}};
+    \node (B) at (-2,-4) {\texttt{integer?}};
+    \node (C) at (-2,-8) {\texttt{is-three?}};
+    \node (D) at (2,-4) {\texttt{negative?}};
+\end{scope}
+
+\begin{scope}[>={Stealth[black]},
+              every edge/.style={draw=black,very thick}]
+    \path [->] (A) edge node {} (B);
+    \path [->] (B) edge node {} (C);
+    \path [->] (A) edge node {} (D);
+    %\path [->] (C) edge node {\texttt{length}} (B);
+    %\path [->] (A) edge[bend right=20] node {\texttt{split}} (C);
+\end{scope}
+\end{tikzpicture}
