@@ -15,7 +15,7 @@
   stringstyle=\color{mymauve}
 }
 
-\title{Automating Data Structure Transformations Through Type Chaining}
+\title{The Typer Piper: Automating Data Structure Transformations Through Type Chaining}
 
 \author{
   Martin Schneider\\
@@ -321,7 +321,7 @@ To support this functionality, the programmer had to define some a generator for
 (define (get-list-predicate-length list-predicate-with-length?)
   (hash-table/get list-predicate-lengths list-predicate-with-length? -1))
 \end{verbatim}
-
+ 
 We can now request a transformation from a list of length 2 to a list of length 8. Note that the search engine realizes it can apply the this transformation to list-len-2? because each generated predicate is marked as a subtype of list-len?. Also note that search engine performs this transformation in a manner that doesn't lose information about the list's length (for example, we could not first convert list-len-2? to length-list? because we would lose the knowledge that len=2).
 
 \begin{verbatim}
