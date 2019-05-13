@@ -49,7 +49,7 @@ Much of programming involves manipulation and transformation of data into differ
 \label{webserver}
 \end{figure}
 
-Languages with type annotations or inference often have the information necessary to infer these flows, but instead force the programmer to explicitly notate the conversion process.  This leads to more code and more thinking, which we believe to be universally worse than less code and less thinking.
+Languages with type annotations or inference often have the information necessary to infer these flows, but instead force the programmer to explicitly notate the conversion process.  This leads to more code and more thinking, which we believe to be generally worse than less code and less thinking.
 
 To remedy this, we propose a system capable of automatically generating these conversion flows.  To achieve this, we built the following functionality in MIT Scheme, which we'll elaborate on in later sections:
 
@@ -75,9 +75,9 @@ Trivially, any system capable of finding type transformations must have a type s
 \label{graph}
 \end{figure}
 
-In this graph, edges represent transformations between predicates.  However, unlike what the figure above may suggest, our system's type conversion graph is dynamic; rather than storing edges as having a source and a sink, edges have a source and a predicate transformation function, which given the source returns a sink.  This allows fancy inferred conversions using dynamic types, such doubling lists of arbitrary lengths.
+In this graph, edges represent transformations between predicates.  However, unlike what the figure above may suggest, our system's type conversion graph is dynamic; rather than storing edges as having a source and a sink, edges have a source and a predicate transformation function, which given the source returns a sink.  This allows fancy inferred conversions using dynamic types, such as doubling lists of arbitrary lengths.
 
-In addition to the predicate transformation graph, we also store a graph of predicate subtypes and super-types.  We chose to use a separate data structure for this (rather than just creating identity transformations in the predicate conversion graph) in order to allow using super-type transformations without losing information from the original predicate.  For example, in the list doubling example, imagine a \texttt{list-len-2?} predicate were transformed into a \texttt{list?} predicate such that it could be doubled.  Doing so would lose the information that the list is of length two, forcing the search to occur on the actual data rather than just on the predicates.  This would be far more computationally intensive and could lead to negative side effects from actually executing transformations during the search without the programmer's permission. 
+In addition to the predicate transformation graph, we also store a graph of predicate subtypes and super-types.  We chose to use a separate data structure for this (rather than just creating identity transformations in the predicate conversion graph) in order to allow using super-type transformations without losing information from the original predicate.  For example, in the list doubling example (explained in greater detail below), imagine that a \texttt{list-len-2?} predicate were transformed into a \texttt{length-list?} predicate so that it could be doubled.  Doing so would lose the information that the list is of length two, forcing the search to occur on the actual data rather than just on the predicates.  This would be far more computationally intensive and could lead to negative side effects from actually executing transformations during the search without the programmer's permission. 
 
 \section{Search Engine}
 
@@ -104,7 +104,7 @@ We can now filter out already visited transformations, and recurse on the remain
 
 \subsection{Handling of joiner transformations}
 
-As discussed above, we'd like to be able to branch predicates into compound predicates.  One motivating example for this is the \texttt{person?} record type, with attributes \texttt{person:first} and \texttt{person:last}, each with corresponding predicates.  We'd like to be able to automatically convert a \texttt{person?} into a \texttt{(person:first? person:last?)} (and then automatically create a \texttt{full-name?} from the \texttt{(person:first? person:last?)}). To do so, we would need two paths of execution, one generating the \texttt{(person:first?)} and the other the \texttt{(person:last?)}, and then a joiner that combines the output of these execution paths into a compound predicate.
+As discussed above, we'd like to be able to branch predicates into compound predicates.  One motivating example for this is the \texttt{person?} record type, with attributes \texttt{first-name} and \texttt{last-name}, each with corresponding predicates.  We'd like to be able to automatically convert a \texttt{person?} into a \texttt{(first-name? last-name?)} (and then automatically create a \texttt{full-name?} from the \texttt{(first-name? last-name?)}). To do so, we would need two paths of execution, one generating the \texttt{(first-name?)} and the other the \texttt{(last-name?)}, and then a joiner that combines the output of these execution paths into a compound predicate.
 
 Here's how we handle these joiner transformations:
 \begin{enumerate}
@@ -116,7 +116,7 @@ Here's how we handle these joiner transformations:
 This method is less efficient than, for example, working backwards from the target predicate.  However, it is an extensible modification to the original search process, and is likely asymptotically equivalent.
 
 \section{Path Visualization and Code Generation}
-Our search engine ouputs a list of structures that transform the input predicate into the desired output predicate. In most cases, this structure is a simple path where each transform function can be applied to the output of the previous transform. For example, requesting a transformation from \texttt{number?} to \texttt{symbol?} is a list of transforms \texttt{'(number->string string->symbol)}. (This example is simplified. Note that our actual path data structure stores full transform datastructures that include the desired input-predicate and the predicate-transform function in addition to the data-transform function).
+Our search engine ouputs a list of structures that transform the input predicate into the desired output predicate. In most cases, this structure is a simple path where each transform function can be applied to the output of the previous transform. For example, requesting a transformation from \texttt{number?} to \texttt{symbol?} is a list of transforms \texttt{'(number->string string->symbol)}. (This example is simplified - our actual path data structure stores full transform datastructures that include the desired input-predicate and the predicate-transform function in addition to the data-transform function).
 
 In cases with joiner transforms, our generated datastructure is a tree of paths. Each leaf of our tree is a transform that separately takes in the full input. Nodes with multiple inputs are joiner transforms that take the output of each path and combine it into a compound predicate.
 
@@ -140,14 +140,12 @@ Programmers can interact with our system through the following method calls.  Mo
   
   \doc{(register-type-transform! input-type output-type transformation-function)}{Registers a function as a transformation between two registered predicates.}{(register-type-transform! number? string? number->string)}
 
-  \doc{(register-type-transform-f! input-type predicate-transform-function \\transformation-function)}{Registers a function as a transformation from the input predicate, into a new predicate generated by a predicate transform function.  See \\\texttt{example-list-types.scm} for an example of where this could be useful.}{\\(register-type-transform! number? (lambda (x) string?) number->string)}
+  \doc{(register-type-transform-f! input-type predicate-transform-function \\transformation-function)}{Registers a function as a transformation from the input predicate, into a new predicate generated by a predicate transform function.  See \\\texttt{example-list-types.scm} for an example of where this could be useful.}{\\(register-type-transform! number? (lambda (input-predicate) string?) number->string)}
 
   \doc{(get-transformations input-predicate output-predicate)}{Returns a list of transformations from the input predicate to the output predicate.}{(get-transformations string? number?)}
 
   \doc{(create-compound-transformation transformation-path)}{Given a transformation path from \texttt{get-transformations}, return a method that transforms according to that path.}{\\((create-compound-transformation (car\\
   (get-transformations number? string?))) 5)}
-
-  \doc{(transform-with-first-path input-predicate output-predicate input-value)}{Find the first path between the input and output predicates, and transform the input accordingly.}{(transform-with-first-path number? string? 5)}
 
   \doc{(transform-with-first-path input-predicate output-predicate input-value)}{Find the first path between the input and output predicates, and transform the input accordingly.}{(transform-with-first-path number? string? 5)}
 
@@ -210,15 +208,18 @@ We explore an example where we have a "database" of records of people. We repres
   (last-name formal-title-name:last-name)) ; last-name?
 
 ;; ... boilerplate registering predicates for each of the above record types ...
-;; (In a production-ready version of our systems, we would have a macro that automatically
-;; registers these predicates for record types without requiring any effort from the user
-;; other than specifying predicate names for each field as we did in comments above.)
+;; (In a production-ready version of our systems, we would have a macro that 
+;; automatically registers these predicates for record types without 
+;; requiring any effort from the user other than specifying predicate names
+;; for each field as we did in comments above.)
 
-(register-type-transform! full-name? formal-title-name? 
-  (lambda (fn)
-    (make-formal-title-name 
-      (if (is-female-first-name? (full-name:first-name fn)) "Mrs." "Mr.")
-      (full-name:last-name fn))))
+(define (first-name-to-formal-title fn)
+  (if (is-female-first-name? fn) "Mrs." "Mr."))
+
+(register-type-transform!
+  first-name? 
+  formal-title? 
+  first-name-to-formal-title)
 
 (register-type-transform! 
   formal-title-name?
@@ -309,7 +310,7 @@ To support this functionality, the programmer had to define some a generator for
       (register-list-predicate-length! list-predicate-with-length? length)
       (register-super! list-predicate-with-length? length-list?)
       
-      list-predicate-with-length?)))
+      list-predicate-with-length?))) 
 
 ;; hash table for storing lengths associated with length-list? predicates
 (define list-predicate-lengths (make-strong-eq-hash-table)) 
@@ -321,7 +322,7 @@ To support this functionality, the programmer had to define some a generator for
   (hash-table/get list-predicate-lengths list-predicate-with-length? -1))
 \end{verbatim}
 
-We can now request a transformation from a list of length 2 2 to a list of length 8. Note that the search engine realizes it can apply the this transformation to list-len-2? because each generated predicate is marked as a subtype of list-len?. Also note that search engine performs this transformation in a manner that doesn't lose information about the list's length (for example, we could not first convert list-len-2? to length-list? because we would lose the knowledge that len=2).
+We can now request a transformation from a list of length 2 to a list of length 8. Note that the search engine realizes it can apply the this transformation to list-len-2? because each generated predicate is marked as a subtype of list-len?. Also note that search engine performs this transformation in a manner that doesn't lose information about the list's length (for example, we could not first convert list-len-2? to length-list? because we would lose the knowledge that len=2).
 
 \begin{verbatim}
 

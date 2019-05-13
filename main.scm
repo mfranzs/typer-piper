@@ -534,17 +534,17 @@
   (pp (codegen path input-predicate output-predicate))
 
   (write-line "Output value:")
-  (write-line ((create-compound-transformation path) input-value))
+  (write-line ((create-compound-transformation path) input-value)))
   
-  (write-line "Transforms:")
-  (pp ((visualize-transformation-transforms path)
-       input-value))
+  ; (write-line "Transforms:")
+  ; (pp ((visualize-transformation-transforms path)
+  ;      input-value))
 
-  (write-line "Predicates:")
-  (pp ((visualize-transformation-predicates path) input-value))
+  ; (write-line "Predicates:")
+  ; (pp ((visualize-transformation-predicates path) input-value))
   
-  (write-line "Values:")
-  (pp ((visualize-transformation-values path) input-value)))
+  ; (write-line "Values:")
+  ; (pp ((visualize-transformation-values path) input-value)))
 
 
 (define (transform-with-first-path input-predicate output-predicate input-value)
